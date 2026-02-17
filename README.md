@@ -85,7 +85,7 @@ Then run your specific module command:
 * **Internal Audit and Accounts:** `git checkout -b audit-accounts-v1 upstream/audit-accounts-v1`
 * **Complaint Management:** `git checkout -b complaint-management-v1 upstream/complaint-management-v1`
 
-## Setting up the project 🛠️
+## Setting up the project
 
 1. Fork the repository (as described above)
 2. Clone **your forked** repository
