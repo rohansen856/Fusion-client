@@ -54,7 +54,7 @@ export default function GradeStatus() {
           headers: { Authorization: `Token ${token}` },
         });
         setAcademicYears(
-          response.data.academic_years.map((year) => ({
+          response.data.academic_years.slice().sort((a, b) => b.localeCompare(a)).map((year) => ({
             value: year,
             label: year,
           }))

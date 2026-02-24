@@ -28,14 +28,17 @@ import {
   generateprereport,       // unchanged: for prereg tab
 } from "../../routes/academicRoutes";
 
-const ACADEMIC_YEARS = [
-  "2021-22",
-  "2022-23",
-  "2023-24",
-  "2024-25",
-  "2025-26",
-  "2026-27",
-];
+const generateAcademicYears = () => {
+  const currentYear = new Date().getFullYear();
+  const endYear = currentYear;
+  const years = [];
+  for (let y = endYear; y >= 2020; y--) {
+    years.push(`${y}-${String(y + 1).slice(-2)}`);
+  }
+  return years;
+};
+
+const ACADEMIC_YEARS = generateAcademicYears();
 
 const SEMESTER_CHOICES = [
   { value: "Odd Semester", label: "Odd Semester" },

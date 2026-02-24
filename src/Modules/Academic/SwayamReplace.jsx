@@ -37,6 +37,7 @@ export default function SwayamReplace({ showOnlyForm = false, onSubmitSuccess, r
   const [isCurrentSemester, setIsCurrentSemester] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
   const [coursesFetched, setCoursesFetched] = useState(false);
+  const [registrationError, setRegistrationError] = useState(null);
 
   useEffect(() => {
     fetchReplaceData();
@@ -50,6 +51,7 @@ export default function SwayamReplace({ showOnlyForm = false, onSubmitSuccess, r
     }
 
     setLoading(true);
+    setRegistrationError(null);
     try {
       const response = await axios.get(swayamReplaceCheckRoute, {
         headers: { Authorization: `Token ${token}` },
@@ -110,12 +112,12 @@ export default function SwayamReplace({ showOnlyForm = false, onSubmitSuccess, r
             setTargetSlots(targetSlotsData);
           }
         } else {
-          setError("No OE courses found from semester 3 onwards. Cannot proceed with replacement.");
+          setRegistrationError("No OE courses found from semester 3 onwards. Cannot proceed with replacement.");
         }
       }
     } catch (err) {
       const errorMsg = err?.response?.data?.error || "Failed to load replacement data.";
-      setError(errorMsg);
+      setRegistrationError(errorMsg);
     } finally {
       setLoading(false);
       setInitialLoad(false);
@@ -318,7 +320,11 @@ export default function SwayamReplace({ showOnlyForm = false, onSubmitSuccess, r
     );
   }
 
-  const formContent = (
+  const formContent = registrationError ? (
+    <Alert color="red" mb="md">
+      {registrationError}
+    </Alert>
+  ) : (
     <>
         {error && (
           <Alert color="red" mb="md" withCloseButton onClose={() => setError(null)}>
@@ -349,7 +355,7 @@ export default function SwayamReplace({ showOnlyForm = false, onSubmitSuccess, r
         <Table striped withTableBorder mb="md">
         <thead>
           <tr>
-            <th colSpan={2}>Registered Courses (To be Replaced)</th>
+            <th colSpan={2} style={{ color: '#c92a2a', fontWeight: 700 }}>Registered Courses (To be Replaced)</th>
           </tr>
         </thead>
         <tbody>
@@ -435,7 +441,7 @@ export default function SwayamReplace({ showOnlyForm = false, onSubmitSuccess, r
       <Table striped withTableBorder mb="md">
         <thead>
           <tr>
-            <th colSpan={2}>New Swayam Courses - Both Required</th>
+            <th colSpan={2} style={{ color: '#c92a2a', fontWeight: 700 }}>New Swayam Courses - Both Required</th>
           </tr>
         </thead>
         <tbody>

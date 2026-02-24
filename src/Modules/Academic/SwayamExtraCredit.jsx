@@ -139,7 +139,7 @@ export default function SwayamExtraCredit({ showOnlyForm = false, onSubmitSucces
         </div>
       ) : (
         <>
-          {hasPendingRequest && (
+          {hasPendingRequest && !error && (
             <Alert color="yellow" mb="md" withCloseButton onClose={() => setHasPendingRequest(false)}>
               <Text weight={500}>
                 You have a pending Extra Credit request. You can continue to register for other available slots.
@@ -147,13 +147,11 @@ export default function SwayamExtraCredit({ showOnlyForm = false, onSubmitSucces
             </Alert>
           )}
 
-          {error && (
+          {error ? (
             <Alert color="red" mb="md" withCloseButton onClose={() => setError(null)}>
               {error}
             </Alert>
-          )}
-
-          {loading ? (
+          ) : loading ? (
             <Center py="xl">
               <Loader />
             </Center>

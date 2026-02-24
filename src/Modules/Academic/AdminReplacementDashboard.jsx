@@ -23,18 +23,11 @@ const SEMESTER_CHOICES = [
 ];
 
 const generateAcademicYears = () => {
-  const currentYear = new Date().getFullYear();
+  const endYear = new Date().getFullYear();
   const years = [];
-
-  years.push(`${currentYear}-${String(currentYear + 1).slice(-2)}`);
-  years.push(`${currentYear - 1}-${String(currentYear).slice(-2)}`);
-
-  for (let i = 2; i <= 6; i++) {
-    const startYear = currentYear - i;
-    const endYear = startYear + 1;
-    years.push(`${startYear}-${String(endYear).slice(-2)}`);
+  for (let y = endYear; y >= 2020; y--) {
+    years.push(`${y}-${String(y + 1).slice(-2)}`);
   }
-  
   return years;
 };
 

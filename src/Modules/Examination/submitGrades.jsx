@@ -61,8 +61,8 @@ function SubmitGrades() {
           get_course_reg_academic_years,
           { headers: { Authorization: `Token ${token}` } }
         );
-        setAcademicYears(data.academic_years.map((y) => ({ value: y.toString(), label: y.toString() })));
-      } catch {
+        setAcademicYears(data.academic_years.slice().sort((a, b) => b.toString().localeCompare(a.toString())).map((y) => ({ value: y.toString(), label: y.toString()})));
+      } catch (error) {
         setError("Failed to load academic years.");
       } finally {
         setLoading(false);

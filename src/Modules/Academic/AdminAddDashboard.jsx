@@ -21,13 +21,12 @@ const SEMESTER_CHOICES = [
 ];
 
 const generateAcademicYears = () => {
-  const currentYear = new Date().getFullYear();
-  const yearsToShow = 5; 
-  return Array.from({ length: yearsToShow }, (_, i) => {
-    const year = currentYear - i;
-    const value = `${year}-${(year + 1).toString().slice(-2)}`;
-    return { value, label: value };
-  });
+  const endYear = new Date().getFullYear();
+  const years = [];
+  for (let y = endYear; y >= 2020; y--) {
+    years.push({ value: `${y}-${String(y + 1).slice(-2)}`, label: `${y}-${String(y + 1).slice(-2)}` });
+  }
+  return years;
 };
 
 export default function AdminAddDashboard() {

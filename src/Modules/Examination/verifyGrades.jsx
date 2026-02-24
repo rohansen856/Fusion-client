@@ -82,7 +82,7 @@ function VerifyGrades() {
           get_student_grades_academic_years,
           { headers: { Authorization: `Token ${token}` } }
         );
-        setYears(data.academic_years.map((y) => ({ value: y, label: y })));
+        setYears(data.academic_years.slice().sort((a, b) => b.localeCompare(a)).map((y) => ({ value: y, label: y })));
       } catch {
         setError("Failed to load academic years.");
       } finally {

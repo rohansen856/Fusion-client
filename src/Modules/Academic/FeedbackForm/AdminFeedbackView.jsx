@@ -72,7 +72,7 @@ export default function AdminFeedbackView() {
       <Card mb="md">
         <Select
           label="Session"
-          data={["2023-24", "2024-25", "2025-26"].map((s) => ({ value: s, label: s }))}
+          data={(() => { const e = new Date().getFullYear(); const r = []; for (let y = e; y >= 2020; y--) r.push(`${y}-${String(y+1).slice(-2)}`); return r.map(s => ({ value: s, label: s })); })()}
           value={session}
           onChange={setSession}
           mb="md"

@@ -183,6 +183,7 @@ export default function AnnounceResult() {
     if (semesterType === "Odd Semester")       { group = (n - 1) / 2; pos = 0; }
     else if (semesterType === "Even Semester") { group = n / 2 - 1;   pos = 1; }
     else                                       { group = n / 2 - 1;   pos = 2; }
+    return group * 3 + pos;
   };
 
   const filteredAnnouncements = announcements

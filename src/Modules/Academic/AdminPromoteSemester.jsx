@@ -39,7 +39,13 @@ export default function AdminPromoteSemester() {
     const token = localStorage.getItem("authToken");
     axios
       .get(listBatchesRoute, { headers: { Authorization: `Token ${token}` } })
-      .then((res) => setBatches(res.data))
+      .then((res) => setBatches(
+        [...(res.data || [])].sort((a, b) => {
+          const yearDiff = (b.year ?? 0) - (a.year ?? 0);
+          if (yearDiff !== 0) return yearDiff;
+          return (a.label ?? "").localeCompare(b.label ?? "");
+        })
+      ))
       .catch(() => setError("Failed to load batches."))
       .finally(() => setLoadingBatches(false));
   }, []);

@@ -50,14 +50,10 @@ export default function AllotCourses() {
 ];
 
   useEffect(() => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const start = y - 3;
+    const endYear = new Date().getFullYear();
     const yrs = [];
-    for (let i = 0; i <= 6; i++) {
-      const y1 = start + i;
-      const y2 = y1 + 1;
-      yrs.push({ value: `${y1}-${String(y2).slice(-2)}`, label: `${y1}-${String(y2).slice(-2)}` });
+    for (let y = endYear; y >= 2020; y--) {
+      yrs.push({ value: `${y}-${String(y + 1).slice(-2)}`, label: `${y}-${String(y + 1).slice(-2)}` });
     }
     setAcademicYearOptions(yrs);
   }, []);
@@ -98,15 +94,18 @@ export default function AllotCourses() {
             batchData: bat
           }));
           
-          // Remove any potential duplicates by value
           const seenValues = new Set();
-          const deduplicatedOptions = uniqueOptions.filter(option => {
-            if (seenValues.has(option.value)) {
-              return false;
-            }
-            seenValues.add(option.value);
-            return true;
-          });
+          const deduplicatedOptions = uniqueOptions
+            .filter(option => {
+              if (seenValues.has(option.value)) return false;
+              seenValues.add(option.value);
+              return true;
+            })
+            .sort((a, b) => {
+              const yearDiff = (b.batchData.year ?? 0) - (a.batchData.year ?? 0);
+              if (yearDiff !== 0) return yearDiff;
+              return (a.label ?? "").localeCompare(b.label ?? "");
+            });
           
           setProgrammeOptions(deduplicatedOptions);
         } else {
