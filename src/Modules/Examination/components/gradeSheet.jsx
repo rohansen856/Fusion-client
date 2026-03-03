@@ -68,7 +68,7 @@ function buildPrintHTML(studentInfo, courses, spi, cpi, semesterLabel, semesterH
   let spiCpiTable;
   if (cutoffEntry) {
     const regularUpToCutoff = regularToSelected.filter(h => h.semester <= cutoffEntry.semester);
-    const finalCpiEntry = regularUpToCutoff[regularUpToCutoff.length - 1];
+    const finalCpiEntry = regularUpToCutoff[regularUpToCutoff.length - 1] || cutoffEntry;
 
     const regularMap = {};
     regularUpToCutoff.forEach(h => { regularMap[h.semester] = h; });
@@ -203,8 +203,6 @@ function buildPrintHTML(studentInfo, courses, spi, cpi, semesterLabel, semesterH
 
   /*  LEGEND META TABLE  */
   #legend-table tr:first-child td { border-top: none; }
-  #legend-table col.l1 { width: 50%; }
-  #legend-table col.l2 { width: 50%; }
   #legend-table td { font-size: var(--fs-xs); line-height: 1.45; padding: 3pt 5pt; vertical-align: top; }
   #legend-table .lbl { font-size: var(--fs-xs); vertical-align: middle; }
 

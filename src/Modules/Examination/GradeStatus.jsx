@@ -15,14 +15,17 @@ import {
   Switch,
   Grid,
   Flex,
+  Modal,
+  ActionIcon,
 } from "@mantine/core";
-import { IconCheck, IconX, IconClock, IconDownload } from "@tabler/icons-react";
+import { IconCheck, IconX, IconClock, IconDownload, IconEye } from "@tabler/icons-react";
 import { showNotification } from "@mantine/notifications";
 import axios from "axios";
 import { useSelector } from "react-redux";
 import {
   grade_status,
   get_student_grades_academic_years,
+  download_grades_prof,
 } from "./routes/examinationRoutes.jsx";
 
 export default function GradeStatus() {
@@ -38,6 +41,7 @@ export default function GradeStatus() {
   // Filter toggles
   const [showSubmitted, setShowSubmitted] = useState(true);
   const [showNotSubmitted, setShowNotSubmitted] = useState(true);
+  const [viewModal, setViewModal] = useState({ open: false, pdfUrl: null, loading: false, error: null, title: "" });
 
   const semesterTypes = [
     { value: "Odd Semester", label: "Odd Semester" },
@@ -140,6 +144,36 @@ export default function GradeStatus() {
     );
   };
 
+  const handleViewGrades = async (course) => {
+    setViewModal({ open: true, pdfUrl: null, loading: true, error: null, title: `${course.course_code} - ${course.course_name}` });
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await axios({
+        url: download_grades_prof,
+        method: "POST",
+        data: {
+          Role: userRole,
+          course_id: course.course_id,
+          academic_year: selectedAcademicYear,
+          semester_type: selectedSemesterType,
+        },
+        headers: { Authorization: `Token ${token}` },
+        responseType: "blob",
+      });
+      const fileName = `${course.course_code}_${course.course_name.replace(/[/\\?%*:|"<>]/g, "_")}.pdf`;
+      const pdfUrl = URL.createObjectURL(new File([response.data], fileName, { type: "application/pdf" }));
+      setViewModal(prev => ({ ...prev, loading: false, pdfUrl }));
+    } catch (err) {
+      const errText = err.response?.data ? await err.response.data.text?.() : err.message;
+      setViewModal(prev => ({ ...prev, loading: false, error: errText || "Failed to load PDF" }));
+    }
+  };
+
+  const closeViewModal = () => {
+    if (viewModal.pdfUrl) URL.revokeObjectURL(viewModal.pdfUrl);
+    setViewModal({ open: false, pdfUrl: null, loading: false, error: null, title: "" });
+  };
+
   const getFilteredData = () => {
     return gradeStatusData.filter((course) => {
       if (course.submitted === "Submitted" && !showSubmitted) return false;
@@ -187,6 +221,7 @@ export default function GradeStatus() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 
     showNotification({
       title: "Export Successful",
@@ -197,14 +232,6 @@ export default function GradeStatus() {
 
   const renderTable = () => {
     const filteredData = getFilteredData();
-    
-    if (gradeStatusData.length === 0) {
-      return (
-        <Center style={{ minHeight: 200 }}>
-          <Text c="dimmed">No data available for the selected filters</Text>
-        </Center>
-      );
-    }
 
     if (filteredData.length === 0) {
       return (
@@ -214,7 +241,7 @@ export default function GradeStatus() {
       );
     }
 
-    const rows = filteredData.map((course, index) => (
+    const rows = filteredData.map((course) => (
       <Table.Tr key={course.course_id}>
         <Table.Td>
           <Text fw={500}>{course.course_code}</Text>
@@ -227,6 +254,17 @@ export default function GradeStatus() {
         </Table.Td>
         <Table.Td>
           <Text size="sm">{course.professor_name}</Text>
+        </Table.Td>
+        <Table.Td>
+          <ActionIcon
+            variant="light"
+            color="blue"
+            size="sm"
+            onClick={() => handleViewGrades(course)}
+            title="View submitted grade sheet"
+          >
+            <IconEye size={16} />
+          </ActionIcon>
         </Table.Td>
         <Table.Td>
           {getStatusBadge(course.submitted, "submitted")}
@@ -247,6 +285,7 @@ export default function GradeStatus() {
             <Table.Th>Course Code</Table.Th>
             <Table.Th>Course Name</Table.Th>
             <Table.Th>Professor Name</Table.Th>
+            <Table.Th>View</Table.Th>
             <Table.Th>Submitted</Table.Th>
             <Table.Th>Verified</Table.Th>
             <Table.Th>Validated</Table.Th>
@@ -387,6 +426,30 @@ export default function GradeStatus() {
           </Stack>
         )}
       </Paper>
+      {/* View Grade PDF Modal */}
+      <Modal
+        opened={viewModal.open}
+        onClose={closeViewModal}
+        title={<Text fw={600}>{viewModal.title}</Text>}
+        size="90%"
+        styles={{ body: { padding: 0, height: "80vh" } }}
+      >
+        {viewModal.loading && (
+          <Center style={{ height: "80vh" }}>
+            <Loader />
+          </Center>
+        )}
+        {viewModal.error && (
+          <Alert color="red" m="md">{viewModal.error}</Alert>
+        )}
+        {viewModal.pdfUrl && (
+          <iframe
+            src={viewModal.pdfUrl}
+            style={{ width: "100%", height: "80vh", border: "none" }}
+            title="Grade Sheet PDF"
+          />
+        )}
+      </Modal>
     </Card>
   );
 }
