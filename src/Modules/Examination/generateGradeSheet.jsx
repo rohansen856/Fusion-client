@@ -13,14 +13,11 @@ import {
 } from "@mantine/core";
 import axios from "axios";
 import { useSelector } from "react-redux";
-import Transcript from "./components/transcript.jsx";
-import {
-  generate_transcript_form,
-  generate_result,
-} from "./routes/examinationRoutes.jsx";
+import GradeSheet from "./components/gradeSheet.jsx";
+import { generate_gradesheet_form } from "./routes/examinationRoutes.jsx";
 import { SEMESTER_OPTIONS } from "./constants/semesterOptions.jsx";
 
-export default function GenerateTranscript() {
+export default function GenerateGradeSheet() {
   const userRole = useSelector((state) => state.user.role);
   const [formData, setFormData] = useState({
     batch: "",
@@ -30,8 +27,8 @@ export default function GenerateTranscript() {
     batches: [],
     semesters: [],
   });
-  const [showTranscript, setShowTranscript] = useState(false);
-  const [transcriptData, setTranscriptData] = useState(null);
+  const [showGradeSheet, setShowGradeSheet] = useState(false);
+  const [gradeSheetData, setGradeSheetData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -44,7 +41,7 @@ export default function GenerateTranscript() {
       }
       try {
         setLoading(true);
-        const { data } = await axios.get(generate_transcript_form, {
+        const { data } = await axios.get(generate_gradesheet_form, {
           params: { role: userRole },
           headers: { Authorization: `Token ${token}` },
         });
@@ -75,7 +72,7 @@ export default function GenerateTranscript() {
       ...prev,
       [field]: value,
     }));
-    setShowTranscript(false);
+    setShowGradeSheet(false);
   };
 
   const handleSubmit = async (e) => {
@@ -104,70 +101,14 @@ export default function GenerateTranscript() {
         semester: semester_no,
         semester_type,
       };
-      const { data } = await axios.post(generate_transcript_form, requestData, {
+      const { data } = await axios.post(generate_gradesheet_form, requestData, {
         headers: { Authorization: `Token ${token}` },
       });
-      setTranscriptData(data);
-      setShowTranscript(true);
+      setGradeSheetData(data);
+      setShowGradeSheet(true);
       setError(null);
     } catch (err) {
-      setError(`Error generating transcript: ${err.message}`);
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDownloadCSV = async () => {
-    const token = localStorage.getItem("authToken");
-    if (!token) {
-      setError("No authentication token found!");
-      return;
-    }
-    if (!formData.batch) {
-      setError("Please select a batch.");
-      return;
-    }
-    if (!formData.semester) {
-      setError("Please select a semester.");
-      return;
-    }
-    const { no: semester_no, type: semester_type } = JSON.parse(
-      formData.semester,
-    );
-    try {
-      setLoading(true);
-      const requestData = {
-        Role: userRole,
-        batch: formData.batch,
-        semester: semester_no,
-        semester_type,
-      };
-      const response = await axios.post(generate_result, requestData, {
-        headers: { Authorization: `Token ${token}` },
-        responseType: "blob",
-      });
-      const batchOption = formOptions.batches.find(
-        (opt) => opt.value === formData.batch,
-      );
-      const semesterOption = formOptions.semesters.find(
-        (opt) => opt.value === formData.semester,
-      );
-      const batchLabel = batchOption ? batchOption.label : formData.batch;
-      const semesterLabel = semesterOption
-        ? semesterOption.label
-        : `Semester ${semester_no}`;
-      const fileName = `${batchLabel}_${semesterLabel}.xlsx`;
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", fileName);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setError(null);
-    } catch (err) {
-      setError(`Error downloading CSV Approval Sheet: ${err.message}`);
+      setError(`Error generating grade sheet: ${err.message}`);
       console.error(err);
     } finally {
       setLoading(false);
@@ -185,7 +126,7 @@ export default function GenerateTranscript() {
         )}
         <Paper shadow="sm" radius="sm" p="md" withBorder>
           <Stack spacing="md">
-            <h1>Transcript Details</h1>
+            <h1>Grade Sheet Details</h1>
             <form onSubmit={handleSubmit}>
               <SimpleGrid cols={2} spacing="md">
                 <Box>
@@ -211,24 +152,16 @@ export default function GenerateTranscript() {
               </SimpleGrid>
               <Group position="right" mt="md">
                 <Button type="submit" size="md" radius="sm">
-                  Generate Transcript
-                </Button>
-                <Button
-                  size="md"
-                  radius="sm"
-                  color="green"
-                  onClick={handleDownloadCSV}
-                >
-                  Download CSV Approval Sheet
+                  Generate Grade Sheet
                 </Button>
               </Group>
             </form>
           </Stack>
         </Paper>
-        {showTranscript && (
+        {showGradeSheet && (
           <Paper shadow="sm" radius="sm" p="md" withBorder>
-            <Transcript
-              data={transcriptData}
+            <GradeSheet
+              data={gradeSheetData}
               semester={JSON.parse(formData.semester)}
             />
           </Paper>

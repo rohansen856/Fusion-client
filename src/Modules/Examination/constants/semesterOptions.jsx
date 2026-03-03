@@ -1,0 +1,21 @@
+/** Shared semester dropdown options used by Grade Sheet and Transcript forms. */
+export const SEMESTER_OPTIONS = [
+  { value: JSON.stringify({ no: 1,  type: "Odd Semester"    }), label: "Semester 1"  },
+  { value: JSON.stringify({ no: 2,  type: "Even Semester"   }), label: "Semester 2"  },
+  { value: JSON.stringify({ no: 2,  type: "Summer Semester" }), label: "Summer 1"    },
+  { value: JSON.stringify({ no: 3,  type: "Odd Semester"    }), label: "Semester 3"  },
+  { value: JSON.stringify({ no: 4,  type: "Even Semester"   }), label: "Semester 4"  },
+  { value: JSON.stringify({ no: 4,  type: "Summer Semester" }), label: "Summer 2"    },
+  { value: JSON.stringify({ no: 5,  type: "Odd Semester"    }), label: "Semester 5"  },
+  { value: JSON.stringify({ no: 6,  type: "Even Semester"   }), label: "Semester 6"  },
+  { value: JSON.stringify({ no: 6,  type: "Summer Semester" }), label: "Summer 3"    },
+  { value: JSON.stringify({ no: 7,  type: "Odd Semester"    }), label: "Semester 7"  },
+  { value: JSON.stringify({ no: 8,  type: "Even Semester"   }), label: "Semester 8"  },
+  { value: JSON.stringify({ no: 8,  type: "Summer Semester" }), label: "Summer 4"    },
+  { value: JSON.stringify({ no: 9,  type: "Odd Semester"    }), label: "Semester 9"  },
+  { value: JSON.stringify({ no: 10, type: "Even Semester"   }), label: "Semester 10" },
+  { value: JSON.stringify({ no: 10, type: "Summer Semester" }), label: "Summer 5"    },
+  { value: JSON.stringify({ no: 11, type: "Odd Semester"    }), label: "Semester 11" },
+  { value: JSON.stringify({ no: 12, type: "Even Semester"   }), label: "Semester 12" },
+  { value: JSON.stringify({ no: 12, type: "Summer Semester" }), label: "Summer 6"    },
+];

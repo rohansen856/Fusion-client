@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import SubmitGrades from "./submitGrades.jsx";
 import VerifyGrades from "./verifyGrades.jsx";
 import GenerateTranscript from "./generateTranscript.jsx";
+import GenerateGradeSheet from "./generateGradeSheet.jsx";
 import Nav from "./components/nav2.jsx";
 import { Layout } from "../../components/layout.jsx";
 import StudentTranscript from "./components/studentTranscript.jsx";
@@ -87,6 +88,14 @@ export default function Examination() {
             element={
               <ProtectedRoute roles={["acadadmin"]}>
                 <StudentTranscript />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/generate-gradesheet"
+            element={
+              <ProtectedRoute roles={["acadadmin"]}>
+                <GenerateGradeSheet />
               </ProtectedRoute>
             }
           />

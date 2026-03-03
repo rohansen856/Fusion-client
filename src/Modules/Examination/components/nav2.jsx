@@ -75,6 +75,11 @@ export default function Nav() {
       path: "/examination/generate-transcript",
       roles: ["acadadmin"],
     },
+    {
+      title: "Grade Sheet",
+      path: "/examination/generate-gradesheet",
+      roles: ["acadadmin"],
+    },
     { title: "Update", path: "/examination/update", roles: ["Dean Academic"] },
     {
       title: "Validate",
