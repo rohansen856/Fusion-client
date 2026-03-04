@@ -7,51 +7,51 @@ import { updateProfileDataRoute } from "../../../routes/dashboardRoutes";
 
 function ProfileComponent({ data }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [profileData, setProfileData] = useState({
     about: data.profile?.about_me || "N/A",
     dob: data.profile?.date_of_birth || "Jan 01, 2004",
     address: data.profile?.address || "XYZ",
-    contactNumber: data.profile?.phone_no || "+91 99999 99999",
-    mailId: data.current[0]?.user.email || "abc@gmail.com",
+    contactNumber: data.profile?.phone_no ?? "",
+    mailId: data.current?.[0]?.user?.email ?? "",
   });
 
   const handleEditClick = async () => {
     const token = localStorage.getItem("authToken");
     if (!token) return console.error("No authentication token found!");
     if (isEditing) {
+      if (submitting) return;
+      setSubmitting(true);
       try {
         const payload = {
           profilesubmit: {
             about_me: profileData.about,
             date_of_birth: profileData.dob,
             address: profileData.address,
-            phone_no: profileData.contactNumber,
+            phone_no: Number(profileData.contactNumber),
           },
         };
 
-        const response = await axios.put(updateProfileDataRoute, payload, {
+        await axios.put(updateProfileDataRoute, payload, {
           headers: { Authorization: `Token ${token}` },
         });
 
-        if (response.status === 200) {
-          notifications.show({
-            message: "Profile updated successfully!",
-            type: "success",
-          });
-        } else {
-          notifications.show({
-            message: "Failed to update profile",
-            type: "error",
-          });
-        }
-      } catch (error) {
         notifications.show({
-          message: "Error updating profile",
-          type: "error",
+          message: "Profile updated successfully!",
+          color: "green",
         });
+        setIsEditing(false);
+      } catch {
+        notifications.show({
+          message: "Error updating profile. Please try again.",
+          color: "red",
+        });
+      } finally {
+        setSubmitting(false);
       }
+    } else {
+      setIsEditing(true);
     }
-    setIsEditing(!isEditing);
   };
 
   const handleChange = (field, value) => {
@@ -88,7 +88,11 @@ function ProfileComponent({ data }) {
           ) : (
             <Text>{profileData.about}</Text>
           )}
-          <Button onClick={handleEditClick} color={isEditing ? "green" : "red"}>
+          <Button
+            onClick={handleEditClick}
+            color={isEditing ? "green" : "red"}
+            loading={submitting}
+          >
             {isEditing ? "Save" : "Edit"}
           </Button>
         </Flex>
@@ -183,6 +187,7 @@ ProfileComponent.propTypes = {
       date_of_birth: PropTypes.string,
       address: PropTypes.string,
       phone_no: PropTypes.number,
+      user_type: PropTypes.string,
     }),
     current: PropTypes.arrayOf(
       PropTypes.shape({
@@ -191,7 +196,7 @@ ProfileComponent.propTypes = {
         }),
       }),
     ),
-  }),
+  }).isRequired,
 };
 
 export default ProfileComponent;

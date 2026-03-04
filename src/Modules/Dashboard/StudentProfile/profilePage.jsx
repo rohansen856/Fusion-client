@@ -13,6 +13,9 @@ import EducationCoursesComponent from "./educationCoursesComponent";
 import { getProfileDataRoute } from "../../../routes/dashboardRoutes";
 
 function InfoCard({ data }) {
+  const primaryHolder = data.current?.[0];
+  const isStudent = data.profile?.user_type === 'student';
+
   return (
     <Card withBorder shadow="sm" radius="md" w={300}>
       <Card.Section>
@@ -21,23 +24,29 @@ function InfoCard({ data }) {
 
       <Card.Section pl="md" mt="sm">
         <Text fw={500} size="md">
-          {data.current[0].user.first_name}
+          {primaryHolder?.user?.first_name ?? '—'}
         </Text>
         <Text fw={500} size="md" c="dimmed">
-          {data.current[0].user.username}
+          {primaryHolder?.user?.username ?? '—'}
         </Text>
       </Card.Section>
       <Card.Section pl="md" mt="sm">
-        <Text fw={500} size="md">
-          {data.profile.department.name} - 20
-          {data.current[0].user.username.slice(0, 2)}
-        </Text>
-        <Text fw={500} size="md">
-          Sem - {data.semester_no}
-        </Text>
+        {data.profile?.department?.name && (
+          <Text fw={500} size="md">
+            {data.profile.department.name}
+            {isStudent && primaryHolder?.user?.username
+              ? ` - 20${primaryHolder.user.username.slice(0, 2)}`
+              : ''}
+          </Text>
+        )}
+        {isStudent && data.semester_no != null && (
+          <Text fw={500} size="md">
+            Sem - {data.semester_no}
+          </Text>
+        )}
       </Card.Section>
-      <Text mt="xs" c="dimmed" size="sm">
-        Student
+      <Text mt="xs" c="dimmed" size="sm" tt="capitalize">
+        {data.profile?.user_type ?? 'User'}
       </Text>
     </Card>
   );
@@ -68,29 +77,38 @@ function Profile() {
     fetchProfile();
   }, []);
 
-  const tabItems = [
-    { title: "Profile" },
-    { title: "Skills & Technologies" },
-    { title: "Education & Courses" },
-    { title: "Work Experience" },
-    { title: "Achievements" },
-  ];
-  const tabToDisplay = [
-    <ProfileComponent data={profileData} />,
-    <SkillsTechComponent data={profileData?.skills} />,
-    <EducationCoursesComponent
-      education={profileData?.education}
-      courses={profileData?.course}
-    />,
-    <WorkExperienceComponent
-      experience={profileData?.experience}
-      project={profileData?.project}
-    />,
-    <AchievementsComponent achievements={profileData?.achievement} />,
-  ];
-
   if (loading) return <p>Loading profile...</p>;
   if (error) return <p>{error}</p>;
+
+  const isStudent = profileData?.profile?.user_type === 'student';
+
+  const tabItems = isStudent
+    ? [
+        { title: "Profile" },
+        { title: "Skills & Technologies" },
+        { title: "Education & Courses" },
+        { title: "Work Experience" },
+        { title: "Achievements" },
+      ]
+    : [{ title: "Profile" }];
+
+  const tabToDisplay = isStudent
+    ? [
+        <ProfileComponent key="profile" data={profileData} />,
+        <SkillsTechComponent key="skills" data={profileData?.skills} />,
+        <EducationCoursesComponent
+          key="education"
+          education={profileData?.education}
+          courses={profileData?.course}
+        />,
+        <WorkExperienceComponent
+          key="work"
+          experience={profileData?.experience}
+          project={profileData?.project}
+        />,
+        <AchievementsComponent key="achievements" achievements={profileData?.achievement} />,
+      ]
+    : [<ProfileComponent key="profile" data={profileData} />];
 
   return (
     <Stack>
