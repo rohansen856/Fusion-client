@@ -7,7 +7,6 @@ import { Layout } from "./components/layout";
 import Dashboard from "./Modules/Dashboard/dashboardNotifications";
 import Profile from "./Modules/Dashboard/StudentProfile/profilePage";
 import LoginPage from "./pages/login";
-import ForgotPassword from "./pages/forgotPassword";
 import AcademicPage from "./Modules/Academic/index";
 import ValidateAuth from "./helper/validateauth";
 import FacultyProfessionalProfile from "./Modules/facultyProfessionalProfile/facultyProfessionalProfile";
@@ -33,8 +32,8 @@ export default function App() {
   return (
     <MantineProvider theme={theme}>
       <Notifications position="top-center" autoClose={2000} limit={1} />
-      {location.pathname !== "/accounts/login" && <ValidateAuth />}
-      {location.pathname !== "/accounts/login" && <InactivityHandler />}
+      {location.pathname !== "/accounts/login" && location.pathname !== "/reset-password" && <ValidateAuth />}
+      {location.pathname !== "/accounts/login" && location.pathname !== "/reset-password" && <InactivityHandler />}
 
       <Routes>
         <Route path="/" element={<Navigate to="/accounts/login" replace />} />
@@ -79,7 +78,7 @@ export default function App() {
           }
         />
         <Route path="/accounts/login" element={<LoginPage />} />
-        <Route path="/reset-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<Navigate to="/accounts/login" replace />} />
         <Route path="/examination/*" element={<Examination />} />
         <Route path="/database/*" element={<Database />} />
         <Route path="*" element={<NotFoundPage />} />

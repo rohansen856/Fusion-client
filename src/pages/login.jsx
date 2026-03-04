@@ -12,14 +12,20 @@ import {
   rem,
   UnstyledButton,
   Badge,
+  Alert,
+  Progress,
+  PinInput,
 } from "@mantine/core";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { notifications } from "@mantine/notifications";
-import { loginRoute } from "../routes/globalRoutes";
+import { loginRoute, passwordResetSendOtp, passwordResetVerifyOtp, passwordResetReset } from "../routes/globalRoutes";
 import iiitdmjLogo from "../assets/iiitdmj_logo.png";
 import iiitdmjLogoMobile from "../assets/IIITJ_logo.webp";
+import { IconAlertCircle, IconCheck } from "@tabler/icons-react";
+
+const OTP_TTL_SECONDS = 10 * 60;
 
 const CONFIG = {
   MOBILE_BREAKPOINT: 768,
@@ -27,7 +33,6 @@ const CONFIG = {
   RESIZE_DEBOUNCE_DELAY: 150,
   MOUSE_TRACKING_THROTTLE: 50,
   AUTH_SUCCESS_DELAY: 500,
-  PASSWORD_RESET_URL: "http://fusion.iiitdmj.ac.in:6310/password-reset/",
 };
 
 const NOTIFICATION_STYLES = {
@@ -138,7 +143,7 @@ function LoginPage() {
 
   const initialIsMobile = useMemo(() => window.innerWidth <= CONFIG.MOBILE_BREAKPOINT, []);
 
-  const [view, setView] = useState("landing");
+  const [view, setView] = useState("landing"); // "landing" | "login" | "forgot-password"
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -150,7 +155,23 @@ function LoginPage() {
   );
   const [isMobile, setIsMobile] = useState(initialIsMobile);
 
-  const isLogin = useMemo(() => view === "login", [view]);
+  // Forgot Password states
+  const [resetStep, setResetStep] = useState(1); // 1 | 2 | 3
+  const [resetError, setResetError] = useState("");
+  const [resetSuccess, setResetSuccess] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpCountdown, setOtpCountdown] = useState(OTP_TTL_SECONDS);
+  const [resendCooldown, setResendCooldown] = useState(60);
+  const [otpTimerRunning, setOtpTimerRunning] = useState(false);
+  const [resendTimerRunning, setResendTimerRunning] = useState(false);
+  const countdownRef = useRef(null);
+  const resendRef = useRef(null);
+  const resetTokenRef = useRef("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const isLogin = useMemo(() => view === "login" || view === "forgot-password", [view]);
+  const isForgotPassword = useMemo(() => view === "forgot-password", [view]);
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
   const isFormValid = useMemo(() => username.trim() && password.trim(), [username, password]);
 
@@ -179,11 +200,27 @@ function LoginPage() {
   );
 
   const handlePasswordReset = useCallback(() => {
-    window.location.href = CONFIG.PASSWORD_RESET_URL;
+    setView("forgot-password");
+    setResetStep(1);
+    setResetError("");
+    setResetSuccess("");
+    setOtp("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setOtpTimerRunning(false);
+    setResendTimerRunning(false);
   }, []);
 
   const handleDismissSession = useCallback(() => {
     setView("landing");
+    setPassword("");
+    setResetStep(1);
+    setResetError("");
+    setOtp("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setOtpTimerRunning(false);
+    setResendTimerRunning(false);
   }, []);
 
   useEffect(() => {
@@ -214,6 +251,276 @@ function LoginPage() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [handleResize]);
+
+  // OTP countdown effect
+  useEffect(() => {
+    if (otpTimerRunning && otpCountdown > 0) {
+      const interval = setInterval(() => {
+        setOtpCountdown((prev) => {
+          if (prev <= 1) {
+            setOtpTimerRunning(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [otpTimerRunning, otpCountdown]);
+
+  // Resend cooldown effect
+  useEffect(() => {
+    if (resendTimerRunning && resendCooldown > 0) {
+      const interval = setInterval(() => {
+        setResendCooldown((prev) => {
+          if (prev <= 1) {
+            setResendTimerRunning(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [resendTimerRunning, resendCooldown]);
+
+  const startOtpCountdown = useCallback(() => {
+    setOtpCountdown(OTP_TTL_SECONDS);
+    setOtpTimerRunning(true);
+  }, []);
+
+  const startResendCooldown = useCallback(() => {
+    setResendCooldown(60);
+    setResendTimerRunning(true);
+  }, []);
+
+  useEffect(
+    () => () => {
+      setOtpTimerRunning(false);
+      setResendTimerRunning(false);
+    },
+    []
+  );
+
+  const fmtTime = (s) =>
+    `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+
+  const getResetPasswordStrength = (pw) => {
+    let score = 0;
+    if (pw.length >= 8) score += 20;
+    if (pw.length >= 12) score += 10;
+    if (/[a-z]/.test(pw)) score += 20;
+    if (/[A-Z]/.test(pw)) score += 20;
+    if (/[0-9]/.test(pw)) score += 15;
+    if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pw)) score += 15;
+    return score;
+  };
+  const pwScore = getResetPasswordStrength(newPassword);
+  const pwColor = pwScore < 60 ? "red" : pwScore < 90 ? "yellow" : "green";
+  const pwLabel = pwScore < 60 ? "Weak" : pwScore < 90 ? "Fair" : "Strong";
+
+  const isPasswordValid = useMemo(() => {
+    return (
+      newPassword.length >= 8 &&
+      /[a-z]/.test(newPassword) &&
+      /[A-Z]/.test(newPassword) &&
+      /[0-9]/.test(newPassword) &&
+      /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword)
+    );
+  }, [newPassword]);
+
+  const isResetFormValid = useMemo(() => {
+    return isPasswordValid && newPassword === confirmPassword;
+  }, [isPasswordValid, newPassword, confirmPassword]);
+
+  const handleSendOtp = useCallback(async () => {
+    setResetError("");
+    if (!username.trim()) {
+      setResetError("Please enter your username / roll no.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data } = await axios.post(passwordResetSendOtp, {
+        username: username.trim(),
+      }, {
+        timeout: 10000,
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (data.success) {
+        setResetStep(2);
+        startOtpCountdown();
+        startResendCooldown();
+      } else {
+        setResetError(data.message || "Unable to send OTP. Please try again.");
+      }
+    } catch (err) {
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      setResetError(
+        err.code === 'ECONNABORTED'
+          ? "Request timeout. Please check your internet connection and try again."
+          : err.response?.status === 429
+          ? "Too many OTP requests. Please wait before trying again."
+          : "Network error. Please check your connection and try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [username, startOtpCountdown, startResendCooldown]);
+
+  const handleResendOtp = useCallback(async () => {
+    setResetError("");
+    setOtp("");
+    setLoading(true);
+    try {
+      const { data } = await axios.post(passwordResetSendOtp, {
+        username: username.trim(),
+      }, {
+        timeout: 10000,
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (data.success) {
+        startOtpCountdown();
+        startResendCooldown();
+      } else {
+        setResetError(data.message || "Unable to resend OTP.");
+      }
+    } catch (err) {
+      setResetError(
+        err.code === 'ECONNABORTED'
+          ? "Request timeout. Please check your internet connection and try again."
+          : err.response?.status === 429
+          ? "Too many OTP requests. Please wait before resending."
+          : "Network error. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [username, startOtpCountdown, startResendCooldown]);
+
+  const handleVerifyOtp = useCallback(async () => {
+    setResetError("");
+    if (otp.length !== 6) {
+      setResetError("Please enter the complete 6-digit OTP.");
+      return;
+    }
+    if (otpCountdown === 0) {
+      setResetError("OTP has expired. Please request a new one.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data } = await axios.post(passwordResetVerifyOtp, {
+        username: username.trim(),
+        otp: otp.trim(),
+      }, {
+        timeout: 10000,
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (data.success) {
+        resetTokenRef.current = data.reset_token;
+        setOtpTimerRunning(false);
+        setResendTimerRunning(false);
+        setResetStep(3);
+      } else {
+        setShake(true);
+        setTimeout(() => setShake(false), 500);
+        setResetError(data.message || "Invalid OTP.");
+      }
+    } catch (err) {
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      setResetError(
+        err.code === 'ECONNABORTED'
+          ? "Request timeout. Please check your internet connection and try again."
+          : err.response?.status === 429
+          ? "Too many incorrect attempts. Please request a new OTP."
+          : err.response?.data?.message || "Network error. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [otp, otpCountdown, username]);
+
+  const handleResetPasswordSubmit = useCallback(async () => {
+    setResetError("");
+    
+    // Password length validation
+    if (newPassword.length < 8) {
+      setResetError("Password must be at least 8 characters.");
+      return;
+    }
+    
+    // Password complexity validation
+    const hasLowercase = /[a-z]/.test(newPassword);
+    const hasUppercase = /[A-Z]/.test(newPassword);
+    const hasNumber = /[0-9]/.test(newPassword);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword);
+    
+    if (!hasLowercase) {
+      setResetError("Password must contain at least one lowercase letter (a-z).");
+      return;
+    }
+    if (!hasUppercase) {
+      setResetError("Password must contain at least one uppercase letter (A-Z).");
+      return;
+    }
+    if (!hasNumber) {
+      setResetError("Password must contain at least one number (0-9).");
+      return;
+    }
+    if (!hasSpecialChar) {
+      setResetError("Password must contain at least one special character (!@#$%^&* etc).");
+      return;
+    }
+    
+    // Password match validation
+    if (newPassword !== confirmPassword) {
+      setResetError("Passwords do not match.");
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const { data } = await axios.post(passwordResetReset, {
+        username: username.trim(),
+        reset_token: resetTokenRef.current,
+        new_password: newPassword,
+      }, {
+        timeout: 10000,
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (data.success) {
+        resetTokenRef.current = "";
+        setResetSuccess("Password reset successfully! Redirecting to login…");
+        setTimeout(() => {
+          setView("login");
+          setResetStep(1);
+          setResetSuccess("");
+          setNewPassword("");
+          setConfirmPassword("");
+          setPassword("");
+        }, 2000);
+      } else {
+        setShake(true);
+        setTimeout(() => setShake(false), 500);
+        setResetError(data.message || "Reset failed. Please start over.");
+      }
+    } catch (err) {
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      setResetError(
+        err.code === 'ECONNABORTED'
+          ? "Request timeout. Please check your internet connection and try again."
+          : err.response?.data?.message || "Network error. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [newPassword, confirmPassword, username]);
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
@@ -378,6 +685,50 @@ function LoginPage() {
           0%, 100% { box-shadow: 0 0 20px rgba(21,171,255,0.3); }
           50% { box-shadow: 0 0 40px rgba(21,171,255,0.6); }
         }
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+        
+        /* Force cursor visibility on mobile */
+        input[type="number"]:focus,
+        input[type="text"]:focus {
+          caret-color: #15ABFF !important;
+          cursor: text !important;
+          -webkit-user-select: text !important;
+          user-select: text !important;
+        }
+        
+        /* Ensure PinInput shows cursor on mobile */
+        .mantine-PinInput-input {
+          -webkit-appearance: none !important;
+          -moz-appearance: textfield !important;
+          caret-color: #15ABFF !important;
+        }
+        
+        .mantine-PinInput-input:focus {
+          caret-color: #15ABFF !important;
+          cursor: text !important;
+          border: 2px solid #15ABFF !important;
+          outline: none !important;
+          box-shadow: 0 0 0 3px rgba(21, 171, 255, 0.1) !important;
+          -webkit-user-select: text !important;
+          user-select: text !important;
+          -webkit-tap-highlight-color: rgba(21, 171, 255, 0.2) !important;
+        }
+        
+        .mantine-PinInput-input:focus-visible {
+          border: 2px solid #15ABFF !important;
+          outline: 2px solid #15ABFF !important;
+          outline-offset: -2px !important;
+        }
+        
+        /* Remove spinner on number inputs */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+          -webkit-appearance: none !important;
+          margin: 0 !important;
+        }
         
         @media (max-width: 768px) {
           .header-container { padding: 8px 12px !important; }
@@ -481,7 +832,7 @@ function LoginPage() {
             flexDirection: 'column',
             justifyContent: 'center',
             padding: isLogin ? '40px 40px 40px 20px' : '0 10%',
-            background: isLogin 
+            background: isLogin
               ? 'linear-gradient(135deg, rgba(248, 249, 250, 0.2) 0%, rgba(255, 255, 255, 0.25) 100%)' 
               : 'transparent',
             borderRight: 'none',
@@ -518,7 +869,6 @@ function LoginPage() {
                     WebkitTextStroke: isLogin ? '3.5px #64f5f5ff' : '3px #DEE2E6',
                     WebkitTextFillColor: 'transparent',
                     transition: 'all 1s ease',
-                    // textShadow: isLogin ? '0 0 20px rgba(11,141,217,0.3)' : 'none'
                 }}
              >
                 WELCOME
@@ -613,7 +963,7 @@ function LoginPage() {
                       aria-label="Return to landing page"
                       style={{
                         transition: 'all 0.3s ease',
-                        display: isMobile ? 'none' : 'inline-block'
+                        display: 'inline-block'
                       }}
                       onMouseEnter={(e) => e.currentTarget.style.transform = 'translateX(-5px)'}
                       onMouseLeave={(e) => e.currentTarget.style.transform = 'translateX(0)'}
@@ -621,19 +971,24 @@ function LoginPage() {
                        <Text size="xs" fw={900} c="blue" lts={1}>← BACK</Text>
                     </UnstyledButton>
                   <Box style={{ position: 'relative' }}>
-                    <Title order={2} fw={900} size={isMobile ? "28px" : "36px"} lts={-1}>Login</Title>
+                    <Title order={2} fw={900} size={isMobile ? "28px" : "36px"} lts={-1}>
+                      {isForgotPassword ? "Reset Password" : "Login"}
+                    </Title>
                     <Box 
                       style={{ 
                         position: 'absolute',
                         bottom: -5,
                         left: 0,
-                        width: 60,
+                        width: isForgotPassword ? 80 : 60,
                         height: 3,
                         background: 'linear-gradient(90deg, #15ABFF 0%, transparent 100%)',
                         animation: 'slideIn 0.5s ease-out, glow 2s ease-in-out infinite'
                       }} 
                     />
                   </Box>
+
+                  {/* Login Form */}
+                  {!isForgotPassword && (
                   <form onSubmit={handleSubmit} style={{ marginTop: isMobile ? '30px' : '40px' }}>
                     <Stack gap={isMobile ? "lg" : "xl"}>
                       <Box style={{ position: 'relative' }}>
@@ -641,7 +996,7 @@ function LoginPage() {
                           label={
                             <Text size="xs" fw={800} c="gray.6" mb={5}>USERNAME</Text>
                           }
-                          placeholder="Roll No / Username"
+                          placeholder="Username / Roll No."
                           variant="unstyled" 
                           size="lg" 
                           radius={0}
@@ -763,6 +1118,359 @@ function LoginPage() {
                       </Box>
                     </Stack>
                   </form>
+                  )}
+
+                  {/* Forgot Password Form */}
+                  {isForgotPassword && (
+                    <Box style={{ marginTop: isMobile ? '20px' : '40px' }}>
+                      <Text size="sm" c="dimmed" mb="xl">
+                        {resetStep === 1 && "Enter your username to receive an OTP on your registered email."}
+                        {resetStep === 2 && "Enter the 6-digit OTP sent to your registered email."}
+                        {resetStep === 3 && "Choose a new password for your account."}
+                      </Text>
+
+                      {/* Alerts */}
+                      {resetError && (
+                        <Alert
+                          icon={<IconAlertCircle size={16} />}
+                          color="red"
+                          mb="md"
+                          radius={0}
+                          withCloseButton
+                          onClose={() => setResetError("")}
+                          style={{
+                            background: "linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)",
+                            color: "#FFF",
+                            border: "none",
+                          }}
+                          styles={{
+                            title: { color: "#FFF" },
+                            message: { color: "rgba(255,255,255,0.95)" },
+                          }}
+                        >
+                          {resetError}
+                        </Alert>
+                      )}
+                      {resetSuccess && (
+                        <Alert
+                          icon={<IconCheck size={16} />}
+                          color="green"
+                          mb="md"
+                          radius={0}
+                          style={{
+                            background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
+                            color: "#FFF",
+                            border: "none",
+                          }}
+                          styles={{
+                            message: { color: "rgba(255,255,255,0.95)" },
+                          }}
+                        >
+                          {resetSuccess}
+                        </Alert>
+                      )}
+
+                      {/* Step 1: Username */}
+                      {resetStep === 1 && (
+                        <Stack gap={isMobile ? "lg" : "xl"}>
+                          <Box style={{ position: "relative" }}>
+                            <TextInput
+                              label={<Text size="xs" fw={800} c="gray.6" mb={5}>USERNAME</Text>}
+                              placeholder="Username / Roll No."
+                              variant="unstyled"
+                              size="lg"
+                              radius={0}
+                              value={username}
+                              onChange={(e) => setUsername(e.currentTarget.value)}
+                              onKeyDown={(e) => e.key === "Enter" && handleSendOtp()}
+                              onFocus={() => setInputFocus("username")}
+                              onBlur={() => setInputFocus(null)}
+                              required
+                              autoFocus
+                              autoComplete="username"
+                              style={{
+                                borderBottom:
+                                  inputFocus === "username"
+                                    ? "2px solid #15ABFF"
+                                    : "2px solid #E9ECEF",
+                                transition: "all 0.3s ease",
+                                background:
+                                  inputFocus === "username"
+                                    ? "linear-gradient(90deg, rgba(21,171,255,0.03) 0%, transparent 100%)"
+                                    : "transparent",
+                                paddingLeft: 10,
+                                paddingRight: 10,
+                              }}
+                            />
+                          </Box>
+                          <Button
+                            fullWidth
+                            size="xl"
+                            radius={0}
+                            loading={loading}
+                            onClick={handleSendOtp}
+                            disabled={!username.trim()}
+                            style={{
+                              height: rem(56),
+                              background: !username.trim()
+                                ? "linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%)"
+                                : "linear-gradient(135deg, #111 0%, #15ABFF 100%)",
+                              transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                              boxShadow: !username.trim() ? "none" : "0 10px 30px rgba(21,171,255,0.3)",
+                              border: "none",
+                              cursor: !username.trim() ? "not-allowed" : "pointer",
+                            }}
+                          >
+                            <Text fw={900} lts={2} c={!username.trim() ? "gray.5" : "white"}>
+                              {loading ? "SENDING..." : "SEND OTP"}
+                            </Text>
+                          </Button>
+                        </Stack>
+                      )}
+
+                      {/* Step 2: Verify OTP */}
+                      {resetStep === 2 && (
+                        <Stack gap={isMobile ? "md" : "lg"} align="center">
+                          <Text size="sm" c="dimmed" ta="center" style={{ maxWidth: '100%' }}>
+                            OTP sent to <strong style={{ color: "#15ABFF" }}>{username}</strong>'s registered email.
+                          </Text>
+
+                          <Stack gap={4} w="100%">
+                            <Group justify="space-between">
+                              <Text size="xs" fw={700} c="dimmed">OTP EXPIRES IN</Text>
+                              <Text
+                                size="xs"
+                                fw={800}
+                                c={otpCountdown < 60 ? "red" : "#15ABFF"}
+                                style={{ fontFamily: "monospace" }}
+                              >
+                                {fmtTime(otpCountdown)}
+                              </Text>
+                            </Group>
+                            <Progress
+                              value={(otpCountdown / OTP_TTL_SECONDS) * 100}
+                              color={otpCountdown < 60 ? "red" : "#15ABFF"}
+                              size="sm"
+                              radius={0}
+                              style={{
+                                boxShadow:
+                                  otpCountdown < 60
+                                    ? "0 0 10px rgba(255,0,0,0.3)"
+                                    : "0 0 10px rgba(21,171,255,0.3)",
+                              }}
+                            />
+                          </Stack>
+
+                          <Box 
+                            mt="md" 
+                            w="100%" 
+                            style={{ display: 'flex', justifyContent: 'center', padding: isMobile ? '0 4px' : '0' }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && otp.length === 6 && otpCountdown > 0 && !loading) {
+                                handleVerifyOtp();
+                              }
+                            }}
+                          >
+                            <PinInput
+                              length={6}
+                              type="number"
+                              inputMode="numeric"
+                              value={otp}
+                              onChange={setOtp}
+                              size={isMobile ? "sm" : "xl"}
+                              autoFocus
+                              placeholder=""
+                              styles={{
+                                root: {
+                                  gap: isMobile ? '3px' : '8px',
+                                  maxWidth: '100%',
+                                  display: 'flex',
+                                  justifyContent: 'center',
+                                },
+                                input: {
+                                  borderRadius: 0,
+                                  border: "2px solid #E9ECEF",
+                                  fontWeight: 800,
+                                  fontSize: isMobile ? "14px" : "24px",
+                                  width: isMobile ? '38px' : '56px',
+                                  height: isMobile ? '46px' : '64px',
+                                  transition: "all 0.3s ease",
+                                  flex: '0 0 auto',
+                                  textAlign: 'center',
+                                },
+                              }}
+                            />
+                          </Box>
+
+                          <Button
+                            fullWidth
+                            size="xl"
+                            radius={0}
+                            loading={loading}
+                            onClick={handleVerifyOtp}
+                            disabled={otp.length !== 6 || otpCountdown === 0}
+                            style={{
+                              height: rem(56),
+                              background:
+                                otp.length !== 6 || otpCountdown === 0
+                                  ? "linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%)"
+                                  : "linear-gradient(135deg, #111 0%, #15ABFF 100%)",
+                              transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                              boxShadow:
+                                otp.length !== 6 || otpCountdown === 0
+                                  ? "none"
+                                  : "0 10px 30px rgba(21,171,255,0.3)",
+                              border: "none",
+                            }}
+                          >
+                            <Text fw={900} lts={2} c={otp.length !== 6 || otpCountdown === 0 ? "gray.5" : "white"}>
+                              {loading ? "VERIFYING..." : "VERIFY OTP"}
+                            </Text>
+                          </Button>
+
+                          <Box mt="sm" w="100%">
+                            <UnstyledButton
+                              disabled={resendCooldown > 0 || loading}
+                              onClick={handleResendOtp}
+                              style={{
+                                padding: "10px 16px",
+                                borderRadius: 0,
+                                border: resendCooldown > 0 ? "1px solid #DEE2E6" : "1px solid #15ABFF",
+                                background:
+                                  resendCooldown > 0
+                                    ? "#F8F9FA"
+                                    : "linear-gradient(90deg, rgba(21,171,255,0.05) 0%, transparent 100%)",
+                                transition: "all 0.3s ease",
+                                cursor: resendCooldown > 0 || loading ? "not-allowed" : "pointer",
+                                opacity: resendCooldown > 0 || loading ? 0.6 : 1,
+                                display: 'block',
+                                width: '100%',
+                                textAlign: 'center',
+                              }}
+                            >
+                              <Text size="xs" fw={800} c={resendCooldown > 0 ? "dimmed" : "blue"}>
+                                {resendCooldown > 0 ? `RESEND OTP IN ${resendCooldown}s` : "RESEND OTP"}
+                              </Text>
+                            </UnstyledButton>
+                          </Box>
+                        </Stack>
+                      )}
+
+                      {/* Step 3: New Password */}
+                      {resetStep === 3 && (
+                        <Stack gap={isMobile ? "lg" : "xl"}>
+                          <Box style={{ position: "relative" }}>
+                            <PasswordInput
+                              label={<Text size="xs" fw={800} c="gray.6" mb={5}>NEW PASSWORD</Text>}
+                              placeholder="Must include: a-z, A-Z, 0-9, special chars"
+                              variant="unstyled"
+                              size="lg"
+                              radius={0}
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.currentTarget.value)}
+                              onFocus={() => setInputFocus("newpassword")}
+                              onBlur={() => setInputFocus(null)}
+                              required
+                              autoFocus
+                              autoComplete="new-password"
+                              styles={{
+                                input: {
+                                  fontSize: isMobile ? '12px' : '14px',
+                                }
+                              }}
+                              style={{
+                                borderBottom:
+                                  inputFocus === "newpassword"
+                                    ? "2px solid #15ABFF"
+                                    : "2px solid #E9ECEF",
+                                transition: "all 0.3s ease",
+                                background:
+                                  inputFocus === "newpassword"
+                                    ? "linear-gradient(90deg, rgba(21,171,255,0.03) 0%, transparent 100%)"
+                                    : "transparent",
+                                paddingLeft: 10,
+                                paddingRight: 10,
+                              }}
+                            />
+                          </Box>
+
+                          {newPassword.length > 0 && (
+                            <Stack gap={4}>
+                              <Group justify="space-between">
+                                <Text size="xs" fw={700} c="dimmed">PASSWORD STRENGTH</Text>
+                                <Text size="xs" fw={800} c={pwColor} tt="uppercase">{pwLabel}</Text>
+                              </Group>
+                              <Progress value={pwScore} color={pwColor} size="sm" radius={0} />
+                            </Stack>
+                          )}
+
+                          <Box style={{ position: "relative" }}>
+                            <PasswordInput
+                              label={<Text size="xs" fw={800} c="gray.6" mb={5}>CONFIRM PASSWORD</Text>}
+                              placeholder="Re-enter new password"
+                              variant="unstyled"
+                              size="lg"
+                              radius={0}
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.currentTarget.value)}
+                              onKeyDown={(e) => e.key === "Enter" && handleResetPasswordSubmit()}
+                              onFocus={() => setInputFocus("confirm")}
+                              onBlur={() => setInputFocus(null)}
+                              required
+                              autoComplete="new-password"
+                              error={
+                                confirmPassword && confirmPassword !== newPassword
+                                  ? "Passwords do not match"
+                                  : undefined
+                              }
+                              styles={{
+                                input: {
+                                  fontSize: isMobile ? '12px' : '12px',
+                                }
+                              }}
+                              style={{
+                                borderBottom:
+                                  inputFocus === "confirm"
+                                    ? "2px solid #15ABFF"
+                                    : "2px solid #E9ECEF",
+                                transition: "all 0.3s ease",
+                                background:
+                                  inputFocus === "confirm"
+                                    ? "linear-gradient(90deg, rgba(21,171,255,0.03) 0%, transparent 100%)"
+                                    : "transparent",
+                                paddingLeft: 10,
+                                paddingRight: 10,
+                              }}
+                            />
+                          </Box>
+
+                          <Button
+                            fullWidth
+                            size="xl"
+                            radius={0}
+                            loading={loading}
+                            onClick={handleResetPasswordSubmit}
+                            disabled={!isResetFormValid}
+                            style={{
+                              height: rem(56),
+                              background: !isResetFormValid
+                                  ? "linear-gradient(135deg, #E9ECEF 0%, #DEE2E6 100%)"
+                                  : "linear-gradient(135deg, #111 0%, #15ABFF 100%)",
+                              transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                              boxShadow: !isResetFormValid
+                                  ? "none"
+                                  : "0 10px 30px rgba(21,171,255,0.3)",
+                              border: "none",
+                            }}
+                          >
+                            <Text fw={900} lts={2} c={!isResetFormValid ? "gray.5" : "white"}>
+                              {loading ? "RESETTING..." : "RESET PASSWORD"}
+                            </Text>
+                          </Button>
+                        </Stack>
+                      )}
+                    </Box>
+                  )}
                   </Box>
                 </Stack>
               </Container>
