@@ -572,7 +572,8 @@ async function fetchStudentHTML(student, token, userRole, semester) {
   );
 }
 
-const EXPORT_BATCH_SIZE = 5;
+const EXPORT_BATCH_SIZE = 30;
+const PDF_PAGES_PER_FILE = 60;
 
 const GradeSheet = forwardRef(function GradeSheet({ data, semester, batchLabel }, ref) {
   const [printing, setPrinting] = useState({});
@@ -694,8 +695,16 @@ const GradeSheet = forwardRef(function GradeSheet({ data, semester, batchLabel }
 
       const _safe = (s) => String(s || "").replace(/[\/\\?%*:|"<>]/g, "_");
       const _semLabel = semester?.type === "summer" ? `Summer_Sem${semester.no}` : `Sem${semester.no}`;
-      const _filename = `GradeSheets_${_safe(batchLabel || "Batch")}_${_semLabel}.pdf`;
-      await savePDFFromHTML(htmls, _filename);
+      const _base = `GradeSheets_${_safe(batchLabel || "Batch")}_${_semLabel}`;
+
+      // Split into chunks to avoid jsPDF's internal string-length overflow
+      // when exporting a large class (can be 60+ students).
+      const chunkCount = Math.ceil(htmls.length / PDF_PAGES_PER_FILE);
+      for (let c = 0; c < chunkCount; c++) {
+        const chunk = htmls.slice(c * PDF_PAGES_PER_FILE, (c + 1) * PDF_PAGES_PER_FILE);
+        const suffix = chunkCount > 1 ? `_Part${c + 1}of${chunkCount}` : "";
+        await savePDFFromHTML(chunk, `${_base}${suffix}.pdf`);
+      }
 
       if (failed > 0) {
         showNotification({
