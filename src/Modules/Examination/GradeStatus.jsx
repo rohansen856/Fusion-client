@@ -18,7 +18,7 @@ import {
   Modal,
   ActionIcon,
 } from "@mantine/core";
-import { IconCheck, IconX, IconClock, IconDownload, IconEye } from "@tabler/icons-react";
+import { IconCheck, IconX, IconClock, IconDownload, IconEye, IconAlertCircle } from "@tabler/icons-react";
 import { showNotification } from "@mantine/notifications";
 import axios from "axios";
 import { useSelector } from "react-redux";
@@ -164,8 +164,16 @@ export default function GradeStatus() {
       const pdfUrl = URL.createObjectURL(new File([response.data], fileName, { type: "application/pdf" }));
       setViewModal(prev => ({ ...prev, loading: false, pdfUrl }));
     } catch (err) {
-      const errText = err.response?.data ? await err.response.data.text?.() : err.message;
-      setViewModal(prev => ({ ...prev, loading: false, error: errText || "Failed to load PDF" }));
+      let errorMessage = "Failed to load grades. Please try again.";
+      try {
+        if (err.response?.data) {
+          const rawText = await err.response.data.text?.();
+          const parsed = JSON.parse(rawText);
+          if (parsed?.error) errorMessage = parsed.error;
+        }
+      } catch {
+      }
+      setViewModal(prev => ({ ...prev, loading: false, error: errorMessage }));
     }
   };
 
@@ -440,7 +448,16 @@ export default function GradeStatus() {
           </Center>
         )}
         {viewModal.error && (
-          <Alert color="red" m="md">{viewModal.error}</Alert>
+          <Center style={{ height: "80vh" }}>
+            <Alert
+              color="red"
+              title="Unable to Load Grades"
+              icon={<IconAlertCircle size={18} />}
+              maw={420}
+            >
+              {viewModal.error}
+            </Alert>
+          </Center>
         )}
         {viewModal.pdfUrl && (
           <iframe
