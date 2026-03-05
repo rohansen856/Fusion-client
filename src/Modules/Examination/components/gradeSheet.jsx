@@ -1,10 +1,160 @@
-import { useState, useRef, useCallback, useEffect } from "react";
-import { Table, Button, Group } from "@mantine/core";
-import { IconPrinter } from "@tabler/icons-react";
+import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from "react";
+import { Table, Button, Group, Text } from "@mantine/core";
+import { IconPrinter, IconDownload } from "@tabler/icons-react";
+import { showNotification } from "@mantine/notifications";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import axios from "axios";
 import { generate_gradesheet_data } from "../routes/examinationRoutes";
 import { useSelector } from "react-redux";
 import "../styles/transcript.css";
+
+const PDF_MARGIN = { top: 75, left: 23, right: 23, bottom: 23 }; // 7.5cm top, 2.3cm others
+const PAGE_W_MM = 210;
+const CONTENT_W_MM = PAGE_W_MM - PDF_MARGIN.left - PDF_MARGIN.right; // 164 mm
+const CONTENT_W_PX = Math.round(CONTENT_W_MM * (96 / 25.4)); // ≈ 620 px
+
+async function savePDFFromHTML(htmlStrings, filename) {
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  let firstPage = true;
+
+  for (const htmlString of htmlStrings) {
+    const cleanHTML = htmlString
+      .replace(/@page\b[^{]*\{[^}]*\}/g, "")
+      .replace(/@media\s+print\s*\{[\s\S]*?\}/g, "")
+      .replace(/(:\s*)hidden\b/g, "$1none")
+      .replace(/border-collapse\s*:\s*collapse/g, "border-collapse:separate;border-spacing:0")
+      .replace(/<\/style>/i, `
+  body { background: #fff !important; }
+</style>`);
+
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = `position:fixed;top:-99999px;left:-99999px;` +
+      `width:${CONTENT_W_PX}px;height:10px;border:none;visibility:hidden;`;
+    document.body.appendChild(iframe);
+
+    try {
+      const iDoc = iframe.contentDocument;
+    iDoc.open();
+    iDoc.write(cleanHTML);
+    iDoc.close();
+
+    await new Promise((r) => setTimeout(r, 250));
+    iDoc.body.style.cssText = `margin:0;padding:0;width:${CONTENT_W_PX}px;background:#fff;`;
+    iframe.style.height = iDoc.body.scrollHeight + "px";
+    await new Promise((r) => setTimeout(r, 150));
+
+    const BORDER = "1px solid #000";
+    const NONE   = "none";
+
+    const tables = [
+      { sel: "#info-table",   type: "box",        noTopBorder: false },
+      { sel: "#course-table", type: "box+header",  noTopBorder: true  },
+      { sel: "#spi-table",    type: "grid",        noTopBorder: true  },
+      { sel: "#gp-table",     type: "box+col",     noTopBorder: true  },
+      { sel: "#abbr-table",   type: "box+col",     noTopBorder: true  },
+      { sel: "#ss-table",     type: "box+col",     noTopBorder: true  },
+      { sel: "#legend-table", type: "box+rows",    noTopBorder: true  },
+    ];
+
+    let spacerHeight = "50pt";
+    iDoc.querySelectorAll("tr").forEach((row) => {
+      const cells = Array.from(row.querySelectorAll("td, th"));
+      if (cells.length > 0 && cells.every((c) => {
+        const s = (c.getAttribute("style") || "").replace(/\s/g, "");
+        return s.includes("border:none") && /height:[^;]+/.test(s);
+      })) {
+
+        const hMatch = (cells[0].getAttribute("style") || "").match(/height\s*:\s*([^;]+)/);
+        if (hMatch) spacerHeight = hMatch[1].trim();
+        row.remove();
+      }
+    });
+
+    const legendTbl = iDoc.querySelector("#legend-table");
+    if (legendTbl) {
+      const gap = iDoc.createElement("div");
+      gap.style.height = spacerHeight;
+      legendTbl.parentNode.insertBefore(gap, legendTbl.nextSibling);
+    }
+
+    tables.forEach(({ sel, type, noTopBorder }) => {
+      const tbl = iDoc.querySelector(sel);
+      if (!tbl) return;
+      const rows = Array.from(tbl.querySelectorAll("tr"));
+
+      tbl.style.borderLeft   = BORDER;
+      tbl.style.borderRight  = BORDER;
+      tbl.style.borderTop    = noTopBorder ? NONE : BORDER;
+      tbl.style.borderBottom = BORDER;
+
+      const lastContentIdx = rows.length - 1;
+
+      rows.forEach((row, rIdx) => {
+        const isLastRow  = rIdx === lastContentIdx;
+        const cellList   = Array.from(row.querySelectorAll("td, th"));
+
+        cellList.forEach((cell, cIdx) => {
+          const normStyle  = (cell.getAttribute("style") || "").replace(/\s/g, "");
+          const isFirstCol = cIdx === 0;
+
+          if (normStyle.includes("border:none")) {
+            cell.style.border = "none";
+            return;
+          }
+
+          const origHideLeft = normStyle.includes("border-left:none");
+          let bottom, left;
+
+          if (type === "grid") {
+            bottom = isLastRow  ? NONE : BORDER;
+            left   = (isFirstCol || origHideLeft) ? NONE : BORDER;
+          } else if (type === "box+header") {
+            bottom = (rIdx === 0 && !isLastRow) ? BORDER : NONE;
+            left   = NONE;
+          } else if (type === "box+rows") {
+            bottom = isLastRow  ? NONE : BORDER;
+            left   = NONE;
+          } else if (type === "box+col") {
+            bottom = NONE;
+            left   = isFirstCol ? NONE : BORDER;
+          } else {
+            bottom = NONE;
+            left   = NONE;
+          }
+
+          cell.style.borderTop    = NONE;
+          cell.style.borderBottom = bottom;
+          cell.style.borderLeft   = left;
+          cell.style.borderRight  = NONE;
+        });
+      });
+    });
+
+    const canvas = await html2canvas(iDoc.body, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      width: CONTENT_W_PX,
+      height: iDoc.body.scrollHeight,
+      windowWidth: CONTENT_W_PX,
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+    const imgH = (canvas.height / canvas.width) * CONTENT_W_MM;
+
+    if (!firstPage) pdf.addPage();
+    pdf.addImage(imgData, "PNG", PDF_MARGIN.left, PDF_MARGIN.top, CONTENT_W_MM, imgH);
+    firstPage = false;
+    } finally {
+      if (document.body.contains(iframe)) {
+        document.body.removeChild(iframe);
+      }
+    }
+  }
+
+  pdf.save(filename);
+}
 
 const esc = (s) =>
   String(s ?? "")
@@ -16,14 +166,23 @@ const esc = (s) =>
 function formatSemesterLabel(semester) {
   if (!semester) return "N/A";
   if (semester.type && semester.type.toLowerCase().includes("summer")) {
-    const map = { 2: "Summer 1", 4: "Summer 2", 6: "Summer 3", 8: "Summer 4" };
-    return map[semester.no] || `Summer ${semester.no}`;
+    const summerNo = Math.floor((semester.no || 0) / 2);
+    return summerNo > 0 ? `Summer ${summerNo}` : `Summer`;
   }
   return String(semester.no);
 }
 
-function buildPrintHTML(studentInfo, courses, spi, cpi, semesterLabel, semesterHistory, selectedSemesterNo) {
-  const roman = (n) => ["I","II","III","IV","V","VI","VII","VIII"][n - 1] || String(n);
+function buildPrintHTML(studentInfo, courses, spi, cpi, semesterLabel, semesterHistory, selectedSemesterNo, selectedIsSummer) {
+  const roman = (n) => {
+    if (!n || n <= 0 || !isFinite(n)) return String(n ?? 0);
+    const vals = [1000,900,500,400,100,90,50,40,10,9,5,4,1];
+    const syms = ["M","CM","D","CD","C","XC","L","XL","X","IX","V","IV","I"];
+    let result = "", num = n;
+    for (let i = 0; i < vals.length; i++) {
+      while (num >= vals[i]) { result += syms[i]; num -= vals[i]; }
+    }
+    return result;
+  };
 
   const isSpecialCourse = (c) => {
     const g = String(c.grade ?? "").trim();
@@ -47,35 +206,71 @@ function buildPrintHTML(studentInfo, courses, spi, cpi, semesterLabel, semesterH
     })
     .join("");
 
-  const isBachelor = (studentInfo.programme || "").toLowerCase().includes("bachelor");
+  const isBachelor = (
+    (studentInfo.programme || "").toLowerCase().includes("bachelor") ||
+    /^b\.(tech|des)/i.test(studentInfo.programme || "")
+  );
   const minCpi = isBachelor ? "5.0" : "6.5";
-  const creditThreshold = isBachelor ? 148 : 72;
+  const creditThreshold = isBachelor ? 148 : 48;
   const allHistory = Array.isArray(semesterHistory) && semesterHistory.length > 0
-    ? semesterHistory
+    ? [...semesterHistory]
     : [{ semester: 1, spi: Number(spi), cpi: Number(cpi), cumulative_credits: 0, is_summer: false }];
+
+  if (selectedIsSummer && !allHistory.some(h => h.is_summer && h.semester === selectedSemesterNo)) {
+    allHistory.push({ semester: selectedSemesterNo, spi: Number(spi), cpi: Number(cpi), cumulative_credits: 0, is_summer: true });
+  }
 
   const regularHistory = allHistory.filter(h => !h.is_summer);
   const summerMap = {};
   allHistory.filter(h => h.is_summer).forEach(h => { summerMap[h.semester] = h; });
 
-  const allToSelected = allHistory.filter(h => h.semester <= (selectedSemesterNo || 99));
-  const regularToSelected = regularHistory.filter(h => h.semester <= (selectedSemesterNo || 99));
+  const N = selectedSemesterNo || 99;
+  const allToSelected = allHistory.filter(h => {
+    if (h.semester < N) return true;
+    if (h.semester === N) return selectedIsSummer ? true : !h.is_summer;
+    return false;
+  });
+  const regularToSelected = regularHistory.filter(h => h.semester <= N);
   const cutoffEntry = allToSelected.find(h => (h.cumulative_credits || 0) >= creditThreshold);
-  const currentEntry = regularToSelected.length > 0
-    ? regularToSelected[regularToSelected.length - 1]
-    : { spi: Number(spi), cpi: Number(cpi) };
+
+  // "Last semester" = no grade history exists beyond the currently viewed (semester, is_summer).
+  // For a regular semester: nothing with a higher semester_no, and no summer at the same number.
+  // For a summer semester: nothing with a higher semester_no.
+  const isLastSemester = selectedIsSummer
+    ? !allHistory.some(h => h.semester > selectedSemesterNo)
+    : !allHistory.some(
+        h => h.semester > selectedSemesterNo ||
+             (h.semester === selectedSemesterNo && h.is_summer)
+      );
+
+  // Full grid (I → last semester + Final CPI) appears ONLY when BOTH:
+  //   1. cumulative credits have met the graduation threshold, AND
+  //   2. we are viewing the student's last semester.
+  // Every other semester — even after credits are satisfied — shows the simple Result line.
+  const showFullGrid = !!cutoffEntry && isLastSemester;
+
+  // SPI/CPI for the simple single-line table.
+  const currentEntry = selectedIsSummer
+    ? { spi: Number(spi), cpi: Number(cpi) }
+    : regularToSelected.length > 0
+      ? regularToSelected[regularToSelected.length - 1]
+      : { spi: Number(spi), cpi: Number(cpi) };
 
   let spiCpiTable;
-  if (cutoffEntry) {
-    const regularUpToCutoff = regularToSelected.filter(h => h.semester <= cutoffEntry.semester);
-    const finalCpiEntry = regularUpToCutoff[regularUpToCutoff.length - 1] || cutoffEntry;
+  if (showFullGrid) {
+    const allRegMap = {};
+    regularToSelected.forEach(h => { allRegMap[h.semester] = h; });
 
-    const regularMap = {};
-    regularUpToCutoff.forEach(h => { regularMap[h.semester] = h; });
+    // Final CPI = CPI at the last viewed point.
+    const finalCpi = selectedIsSummer
+      ? Number(cpi)
+      : (regularToSelected.length > 0
+          ? Number(regularToSelected[regularToSelected.length - 1].cpi)
+          : Number(cpi));
 
     const columns = [];
-    for (let s = 1; s <= cutoffEntry.semester; s++) {
-      const h = regularMap[s];
+    for (let s = 1; s <= selectedSemesterNo; s++) {
+      const h = allRegMap[s];
       columns.push({ label: roman(s), spi: h ? h.spi : null, cpi: h ? h.cpi : null });
       if (s % 2 === 0) {
         const sd = summerMap[s];
@@ -97,7 +292,7 @@ function buildPrintHTML(studentInfo, courses, spi, cpi, semesterLabel, semesterH
 <tr>
   <td class="lbl" style="border-right:none">SPI</td>
   ${columns.map(c => `<td style="text-align:center">${c.spi !== null ? Number(c.spi).toFixed(1) : '-'}</td>`).join("")}
-  <td style="text-align:center" rowspan="2">${Number(finalCpiEntry.cpi).toFixed(1)}</td>
+  <td style="text-align:center" rowspan="2">${finalCpi.toFixed(1)}</td>
 </tr>
 <tr>
   <td class="lbl" style="border-right:none;border-top:hidden">CPI</td>
@@ -105,7 +300,8 @@ function buildPrintHTML(studentInfo, courses, spi, cpi, semesterLabel, semesterH
 </tr>
 </table>`;
   } else {
-    // Credits threshold not yet reached — single row showing current SPI & CPI
+    // Credits threshold not yet reached, or not viewing the last semester →
+    // single row showing current SPI & CPI only.
     spiCpiTable = `
 <table id="spi-table">
 <colgroup><col style="width:20%"><col style="width:40%"><col style="width:40%"></colgroup>
@@ -281,7 +477,7 @@ ${spiCpiTable}
         <td style="border:none;padding:0;font-size:var(--fs-xs)"></td>
       </tr>
     </table>
-    ${hasSpecialCourses ? `<div style="font-size:8pt;margin-top:3pt">*In ${specialCourseCodes} student is awarded SPI based on performance in various evaluation in place of grade.</div>` : ""}
+    ${hasSpecialCourses ? `<div style="font-size:8pt;margin-top:3pt">*In ${esc(specialCourseCodes)} student is awarded SPI based on performance in various evaluation in place of grade.</div>` : ""}
   </td>
 </tr>
 </table>
@@ -341,9 +537,49 @@ ${cutoffEntry ? `<tr>
 </body></html>`;
 }
 
-function GradeSheet({ data, semester }) {
+// Fetch grade data and build HTML for one student's grade sheet, used by both print and PDF export handlers.
+async function fetchStudentHTML(student, token, userRole, semester) {
+  const { data: gsData } = await axios.post(
+    generate_gradesheet_data,
+    { Role: userRole, student: student.id_id, semester: JSON.stringify(semester) },
+    { headers: { Authorization: `Token ${token}` } }
+  );
+  if (!gsData) throw new Error("Failed to load grade sheet.");
+  const courseEntries = gsData.courses_grades ? Object.values(gsData.courses_grades) : [];
+  if (courseEntries.length === 0) throw new Error("Marks not yet submitted.");
+  const processedCourses = courseEntries.map((course) => ({
+    coursecode: course.course_code,
+    coursename: course.course_name,
+    credits: course.credit || 0,
+    grade: course.grade,
+    special_symbol: course.special_symbol || "",
+  }));
+  let userData = {};
+  try { userData = JSON.parse(localStorage.getItem("user")) || {}; } catch (_) {}
+  const studentInfo = {
+    name: gsData.student_name || gsData.name || student.name || userData.name || "",
+    rollNumber: gsData.roll_number || student.id_id || "",
+    programme: gsData.programme || student.programme || "N/A",
+    discipline: gsData.discipline || gsData.department || gsData.branch || student.branch || "N/A",
+    academicYear: gsData.academic_year || student.academic_year || "N/A",
+  };
+  const semesterLabel = formatSemesterLabel(semester);
+  const selectedIsSummer = !!(semester?.type && semester.type.toLowerCase().includes("summer"));
+  return buildPrintHTML(
+    studentInfo, processedCourses,
+    parseFloat(gsData.spi) || 0, parseFloat(gsData.cpi) || 0,
+    semesterLabel, gsData.semester_history || [], semester?.no || 1, selectedIsSummer
+  );
+}
+
+const EXPORT_BATCH_SIZE = 5;
+
+const GradeSheet = forwardRef(function GradeSheet({ data, semester, batchLabel }, ref) {
   const [printing, setPrinting] = useState({});
   const [printError, setPrintError] = useState({});
+  const [downloading, setDownloading] = useState({});
+  const [downloadError, setDownloadError] = useState({});
+  const [exportingAll, setExportingAll] = useState(false);
   const students = data?.students || [];
   const userRole = useSelector((state) => state.user.role);
   const iframeRef = useRef(null);
@@ -400,73 +636,84 @@ function GradeSheet({ data, semester }) {
       setPrintError((prev) => ({ ...prev, [student.id_id]: "Authentication error. Please log in again." }));
       return;
     }
-
+    setPrinting((prev) => ({ ...prev, [student.id_id]: true }));
+    setPrintError((prev) => { const n = { ...prev }; delete n[student.id_id]; return n; });
     try {
-      setPrinting((prev) => ({ ...prev, [student.id_id]: true }));
-      const { data: gsData } = await axios.post(
-        generate_gradesheet_data,
-        {
-          Role: userRole,
-          student: student.id_id,
-          semester: JSON.stringify(semester),
-        },
-        { headers: { Authorization: `Token ${token}` } }
-      );
-
-      if (!gsData) {
-        setPrintError((prev) => ({ ...prev, [student.id_id]: "Failed to load grade sheet. Please try again." }));
-        return;
-      }
-
-      const courseEntries = gsData.courses_grades
-        ? Object.values(gsData.courses_grades)
-        : [];
-
-      if (courseEntries.length === 0) {
-        setPrintError((prev) => ({ ...prev, [student.id_id]: "Marks not yet submitted." }));
-        return;
-      }
-
-      setPrintError((prev) => { const n = { ...prev }; delete n[student.id_id]; return n; });
-
-      const processedCourses = courseEntries.map((course) => ({
-        coursecode: course.course_code,
-        coursename: course.course_name,
-        credits: course.credit || 0,
-        grade: course.grade,
-        special_symbol: course.special_symbol || "",
-      }));
-
-      let userData = {};
-      try { userData = JSON.parse(localStorage.getItem("user")) || {}; } catch (_) {}
-
-      const studentInfo = {
-        name: gsData.student_name || gsData.name || student.name || userData.name || "",
-        rollNumber: gsData.roll_number || student.id_id || "",
-        programme: gsData.programme || student.programme || "N/A",
-        discipline: gsData.discipline || gsData.department || gsData.branch || student.branch || "N/A",
-        academicYear: gsData.academic_year || student.academic_year || "N/A",
-      };
-
-      const semesterLabel = formatSemesterLabel(semester);
-      const html = buildPrintHTML(
-        studentInfo,
-        processedCourses,
-        parseFloat(gsData.spi) || 0,
-        parseFloat(gsData.cpi) || 0,
-        semesterLabel,
-        gsData.semester_history || [],
-        semester?.no || 1
-      );
-
+      const html = await fetchStudentHTML(student, token, userRole, semester);
       printViaIframe(html);
     } catch (err) {
       console.error("Print error:", err);
-      setPrintError((prev) => ({ ...prev, [student.id_id]: "Failed to load grade sheet. Please try again." }));
+      setPrintError((prev) => ({ ...prev, [student.id_id]: err.message || "Failed to load grade sheet. Please try again." }));
     } finally {
       setPrinting((prev) => ({ ...prev, [student.id_id]: false }));
     }
   };
+
+  const handleDownload = async (student) => {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      setDownloadError((prev) => ({ ...prev, [student.id_id]: "Authentication error. Please log in again." }));
+      return;
+    }
+    setDownloading((prev) => ({ ...prev, [student.id_id]: true }));
+    setDownloadError((prev) => { const n = { ...prev }; delete n[student.id_id]; return n; });
+    try {
+      const html = await fetchStudentHTML(student, token, userRole, semester);
+      const safe = (s) => String(s || "").replace(/[\/\\?%*:|"<>]/g, "_");
+      await savePDFFromHTML([html], `GradeSheet_${safe(student.id_id)}.pdf`);
+    } catch (err) {
+      console.error("Download error:", err);
+      setDownloadError((prev) => ({ ...prev, [student.id_id]: err.message || "Failed to download grade sheet." }));
+    } finally {
+      setDownloading((prev) => ({ ...prev, [student.id_id]: false }));
+    }
+  };
+
+  const exportAll = useCallback(async (onDone) => {
+    const token = localStorage.getItem("authToken");
+    if (!token || students.length === 0) { onDone?.(); return; }
+    setExportingAll(true);
+    try {
+      const htmls = [];
+      let failed = 0;
+      for (let i = 0; i < students.length; i += EXPORT_BATCH_SIZE) {
+        const batch = students.slice(i, i + EXPORT_BATCH_SIZE);
+        const results = await Promise.allSettled(
+          batch.map((student) => fetchStudentHTML(student, token, userRole, semester))
+        );
+        results.forEach((r) => {
+          if (r.status === "fulfilled") htmls.push(r.value);
+          else failed++;
+        });
+      }
+
+      if (htmls.length === 0) {
+        showNotification({ title: "Export Failed", message: "No grade sheets could be generated.", color: "red" });
+        return;
+      }
+
+      const _safe = (s) => String(s || "").replace(/[\/\\?%*:|"<>]/g, "_");
+      const _semLabel = semester?.type === "summer" ? `Summer_Sem${semester.no}` : `Sem${semester.no}`;
+      const _filename = `GradeSheets_${_safe(batchLabel || "Batch")}_${_semLabel}.pdf`;
+      await savePDFFromHTML(htmls, _filename);
+
+      if (failed > 0) {
+        showNotification({
+          title: "Partial Export",
+          message: `${htmls.length} sheet(s) exported. ${failed} could not be generated.`,
+          color: "yellow",
+        });
+      }
+    } catch (err) {
+      console.error("Export all error:", err);
+      showNotification({ title: "Export Failed", message: "An unexpected error occurred.", color: "red" });
+    } finally {
+      setExportingAll(false);
+      onDone?.();
+    }
+  }, [students, userRole, semester]);
+
+  useImperativeHandle(ref, () => ({ exportAll, exportingAll }), [exportAll, exportingAll]);
 
   return (
     <div className="transcript-container">
@@ -485,7 +732,7 @@ function GradeSheet({ data, semester }) {
                 <td className="table-cell">{student.id_id}</td>
                 <td className="table-cell">{student.programme}</td>
                 <td style={{ textAlign: "center" }}>
-                  <Group gap="xs" justify="center" align="center">
+                  <Group gap="xs" justify="center" align="center" wrap="wrap">
                     <Button
                       size="xs"
                       color="blue"
@@ -495,10 +742,21 @@ function GradeSheet({ data, semester }) {
                     >
                       Print
                     </Button>
+                    <Button
+                      size="xs"
+                      color="teal"
+                      variant="outline"
+                      leftSection={<IconDownload size={14} />}
+                      onClick={() => handleDownload(student)}
+                      loading={downloading[student.id_id]}
+                    >
+                      Download
+                    </Button>
                     {printError[student.id_id] && (
-                      <span style={{ color: "red", fontSize: "12px" }}>
-                        {printError[student.id_id]}
-                      </span>
+                      <Text c="red" size="xs">{printError[student.id_id]}</Text>
+                    )}
+                    {downloadError[student.id_id] && (
+                      <Text c="red" size="xs">{downloadError[student.id_id]}</Text>
                     )}
                   </Group>
                 </td>
@@ -511,6 +769,6 @@ function GradeSheet({ data, semester }) {
       )}
     </div>
   );
-}
+});
 
 export default GradeSheet;

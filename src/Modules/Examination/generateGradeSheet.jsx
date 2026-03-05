@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Alert,
   Card,
@@ -11,6 +11,7 @@ import {
   SimpleGrid,
   LoadingOverlay,
 } from "@mantine/core";
+import { IconDownload } from "@tabler/icons-react";
 import axios from "axios";
 import { useSelector } from "react-redux";
 import GradeSheet from "./components/gradeSheet.jsx";
@@ -31,6 +32,8 @@ export default function GenerateGradeSheet() {
   const [gradeSheetData, setGradeSheetData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [exportingAll, setExportingAll] = useState(false);
+  const gradeSheetRef = useRef(null);
 
   useEffect(() => {
     const fetchFormOptions = async () => {
@@ -150,10 +153,28 @@ export default function GenerateGradeSheet() {
                   />
                 </Box>
               </SimpleGrid>
-              <Group position="right" mt="md">
-                <Button type="submit" size="md" radius="sm">
-                  Generate Grade Sheet
-                </Button>
+              <Group position="apart" mt="md">
+                <Group gap="sm">
+                  <Button type="submit" size="md" radius="sm">
+                    Generate Grade Sheet
+                  </Button>
+                  {showGradeSheet && (
+                    <Button
+                      size="md"
+                      radius="sm"
+                      color="teal"
+                      variant="outline"
+                      leftSection={<IconDownload size={16} />}
+                      loading={exportingAll}
+                      onClick={() => {
+                        setExportingAll(true);
+                        gradeSheetRef.current?.exportAll(() => setExportingAll(false));
+                      }}
+                    >
+                      Export All
+                    </Button>
+                  )}
+                </Group>
               </Group>
             </form>
           </Stack>
@@ -161,8 +182,10 @@ export default function GenerateGradeSheet() {
         {showGradeSheet && (
           <Paper shadow="sm" radius="sm" p="md" withBorder>
             <GradeSheet
+              ref={gradeSheetRef}
               data={gradeSheetData}
               semester={JSON.parse(formData.semester)}
+              batchLabel={formOptions.batches.find((b) => b.value === formData.batch)?.label || formData.batch}
             />
           </Paper>
         )}
