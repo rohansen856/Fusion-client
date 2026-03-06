@@ -222,7 +222,6 @@ export default function SwayamReplace({ showOnlyForm = false, onSubmitSuccess, r
     const basicComplete = selectedSourceCourse && selectedTargetSlot && selectedTargetCourse;
     if (!basicComplete) return false;
 
-    // Auto-lock case: only 1 slot required. If slot 2 is partially filled, require it to be complete.
     if (singleSlotAllowed) {
       const slot2Partial = selectedTargetSlot2 || selectedTargetCourse2;
       if (slot2Partial) {
@@ -238,7 +237,6 @@ export default function SwayamReplace({ showOnlyForm = false, onSubmitSuccess, r
       return selectedSourceCourse !== selectedTargetCourse;
     }
 
-    // Normal case: both slots required
     return (
       !!selectedTargetSlot2 &&
       !!selectedTargetCourse2 &&
@@ -364,7 +362,14 @@ export default function SwayamReplace({ showOnlyForm = false, onSubmitSuccess, r
         
         {singleSlotAllowed ? (
           <Alert color="orange" mb="md" variant="light">
-            <strong>Note:</strong> If you have done a Swayam course in a previous semester and it was not used for replacing an Elective (i.e., it remained as Extra Credit), you can select only 1 new Swayam course. If that is not the case, you must select both slots.
+            <strong>Note:</strong>
+            <ul style={{ margin: '6px 0 0 0', paddingLeft: '20px' }}>
+              <li>If you have done a Swayam course in a previous semester and it was <strong>not used for replacing an Elective</strong> (i.e., it remained as Extra Credit), you can select <strong>only 1</strong> new Swayam course.</li>
+            </ul>
+            <div style={{ textAlign: 'center', fontWeight: 'bold', color: 'red', margin: '4px 0' }}>OR</div>
+            <ul style={{ margin: '0', paddingLeft: '20px' }}>
+              <li>If you have <strong>not done any Swayam course in your previous semesters</strong>, then you have to opt <strong>two Swayam Courses</strong>.</li>
+            </ul>
           </Alert>
         ) : isCurrentSemester ? (
           <Alert color="orange" mb="md" variant="light">
