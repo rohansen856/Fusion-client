@@ -35,6 +35,7 @@ export default function SwayamReplace({ showOnlyForm = false, onSubmitSuccess, r
   const [targetSlotsForSelection2, setTargetSlotsForSelection2] = useState([]);
 
   const [isCurrentSemester, setIsCurrentSemester] = useState(false);
+  const [singleSlotAllowed, setSingleSlotAllowed] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
   const [coursesFetched, setCoursesFetched] = useState(false);
   const [registrationError, setRegistrationError] = useState(null);
@@ -60,6 +61,7 @@ export default function SwayamReplace({ showOnlyForm = false, onSubmitSuccess, r
       const data = response.data;
 
       setIsCurrentSemester(data.is_current_semester || false);
+      setSingleSlotAllowed(data.single_slot_allowed || false);
       
       if (data.has_pending_request) {
         setHasPendingRequest(true);
@@ -218,10 +220,28 @@ export default function SwayamReplace({ showOnlyForm = false, onSubmitSuccess, r
 
   const isFormComplete = () => {
     const basicComplete = selectedSourceCourse && selectedTargetSlot && selectedTargetCourse;
+    if (!basicComplete) return false;
+
+    // Auto-lock case: only 1 slot required. If slot 2 is partially filled, require it to be complete.
+    if (singleSlotAllowed) {
+      const slot2Partial = selectedTargetSlot2 || selectedTargetCourse2;
+      if (slot2Partial) {
+        return (
+          !!selectedTargetSlot2 &&
+          !!selectedTargetCourse2 &&
+          selectedSourceCourse !== selectedTargetCourse &&
+          selectedSourceCourse !== selectedTargetCourse2 &&
+          selectedTargetCourse !== selectedTargetCourse2 &&
+          selectedTargetSlot !== selectedTargetSlot2
+        );
+      }
+      return selectedSourceCourse !== selectedTargetCourse;
+    }
+
+    // Normal case: both slots required
     return (
-      basicComplete &&
-      selectedTargetSlot2 &&
-      selectedTargetCourse2 &&
+      !!selectedTargetSlot2 &&
+      !!selectedTargetCourse2 &&
       selectedSourceCourse !== selectedTargetCourse &&
       selectedSourceCourse !== selectedTargetCourse2 &&
       selectedTargetCourse !== selectedTargetCourse2 &&
@@ -342,7 +362,11 @@ export default function SwayamReplace({ showOnlyForm = false, onSubmitSuccess, r
           Replace an existing Swayam course with a new one. This request requires Academic approval.
         </Text>
         
-        {isCurrentSemester ? (
+        {singleSlotAllowed ? (
+          <Alert color="orange" mb="md" variant="light">
+            <strong>Note:</strong> If you have done a Swayam course in a previous semester and it was not used for replacing an Elective (i.e., it remained as Extra Credit), you can select only 1 new Swayam course. If that is not the case, you must select both slots.
+          </Alert>
+        ) : isCurrentSemester ? (
           <Alert color="orange" mb="md" variant="light">
             <strong>Both Slots Required:</strong> The registered course will be dropped and two new Swayam courses will be registered upon approval.
           </Alert>
@@ -441,7 +465,9 @@ export default function SwayamReplace({ showOnlyForm = false, onSubmitSuccess, r
       <Table striped withTableBorder mb="md">
         <thead>
           <tr>
-            <th colSpan={2} style={{ color: '#c92a2a', fontWeight: 700 }}>New Swayam Courses - Both Required</th>
+            <th colSpan={2} style={{ color: '#c92a2a', fontWeight: 700 }}>
+              {singleSlotAllowed ? "New Swayam Courses - Select At Least One" : "New Swayam Courses - Both Required"}
+            </th>
           </tr>
         </thead>
         <tbody>
