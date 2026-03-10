@@ -1,0 +1,62 @@
+.pageBackground {
+  background-color: white;
+  width: 95%;
+  margin-left: 32px;
+  margin-top: 20px;
+  justify-content: center;
+  align-items: flex-start;
+  border: 0.5mm solid #C9EBFF;
+}
+
+.wrapper {
+  width: 100%;
+  max-height: 80%;
+  margin: 0.5rem;
+  border-radius: 0.375rem;
+  padding: 4%;
+}
+
+.buttonContainer {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.button {
+  padding: 0.5rem;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-size: 1.1rem; /* Increased heading size */
+  font-weight: normal; 
+}
+
+.progressBar {
+  width: 100%;
+  height: 0.25rem;
+  background-color: lightblue;
+  border-radius: 0.375rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 0.5rem;
+}
+
+.progressButton {
+  cursor: pointer;
+  height: 100%;
+  width: 100%;
+  border-radius: 0.375rem;
+  border: none;
+}
+
+.activeProgress {
+  background-color: #17ABFF;
+}
+
+.inactiveProgress {
+  background-color: lightblue;
+}
+
+.hr {
+  margin: 1rem 0;
+}

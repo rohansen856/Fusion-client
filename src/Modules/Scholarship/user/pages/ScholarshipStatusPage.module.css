@@ -1,0 +1,81 @@
+/* ScholarshipStatusPage.module.css */
+
+.pageContainer {
+  width: 90vw;
+  margin-left: 32px;
+  margin-top: 20px;
+  padding: 4rem;
+  border: 0.5mm solid #C9EBFF;
+  border-radius: 0.5rem;
+  background-color: white;
+}
+
+.gridContainer {
+  display: block;
+  margin-bottom: 1.5rem;
+  padding-left: 1rem; /* Added padding to shift content right */
+}
+
+.progressButton {
+  position: relative;
+  padding: 0.75rem 0;
+  border: none;
+  background: transparent;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.3s ease;
+  width: 100%;
+  display: block;
+  padding-left: 1rem; /* Additional padding for text */
+}
+
+.progressButton:hover {
+  color: #17ABFF;
+}
+
+.progressButton.active {
+  font-weight: 600;
+  color: #17ABFF;
+}
+
+/* Adjusted blue underline */
+.progressButton.active::after {
+  content: '';
+  position: absolute;
+  bottom: -0.5rem;
+  left: 1rem; /* Shifted right */
+  width: 95%;
+  height: 3px;
+  background-color: #17ABFF;
+  border-radius: 2px;
+}
+
+/* Progress bar styling */
+.progressBarContainer {
+  width: 95%;
+  height: 0.25rem;
+  background-color: #C9EBFF;
+  border-radius: 0.5rem;
+  margin: 1.5rem 0;
+  margin-left: 1rem; /* Shifted right */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .pageContainer {
+    width: 95vw;
+    margin-left: 10px;
+    padding: 2rem;
+  }
+  
+  .progressButton {
+    padding: 0.75rem 0 0.75rem 1rem;
+  }
+  
+  .progressBarContainer {
+    margin-left: 1rem;
+  }
+}
