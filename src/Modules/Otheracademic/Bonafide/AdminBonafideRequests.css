@@ -1,0 +1,82 @@
+.admin-bonafide-container {
+  padding: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.admin-bonafide-title {
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 20px;
+  color: #17191b;
+  font-family: 'Roboto', sans-serif;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 12px 15px;
+  text-align: left;
+}
+
+th {
+  background-color: #111213;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+td {
+  background-color: #fff;
+  border-bottom: 1px solid #ddd;
+}
+
+tr:hover td {
+  background-color: #f1f1f1;
+}
+
+/* Status Colors */
+.status-approved {
+  color: rgb(6, 107, 48);
+  font-weight: bold;
+}
+
+.status-pending {
+  color: #f48c06;
+  font-weight: bold;
+}
+
+/* View Form Link */
+.view-form-link {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.view-form-link:hover {
+  text-decoration: underline;
+}
+
+/* Button Styling */
+button {
+  border-radius: 5px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* Submit Button Styling */
+button[type="submit"] {
+  background-color: #007bff;
+  color: white;
+  font-weight: 600;
+}
+
+button[type="submit"]:hover {
+  background-color: #0056b3;
+}

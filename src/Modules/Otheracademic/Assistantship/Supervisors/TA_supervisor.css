@@ -1,0 +1,88 @@
+/* General container styling for the Assistantship form */
+.assistantship-paper {
+  padding: 20px;
+  max-width: 800px;
+  margin: 20px auto;
+  border-radius: 10px;
+  background-color: #F5F7F8; /* Light grey background */
+}
+
+/* Flexbox styling for the form layout */
+.assistantship-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Vertical spacing between form sections */
+}
+
+/* Input fields with a uniform look */
+.assistantship-input {
+  background-color: #eff3f4; /* Brightened input field color */
+  border: none;
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 5px;
+  box-sizing: border-box;
+  color: #0f1010; /* Neutral text color */
+}
+
+/* Submit button styling */
+.submit-btn {
+  background-color: #007BFF; /* Blue background */
+  color: white;
+  border: none;
+  margin: 20px auto; /* Center the button */
+  padding: 10px 20px;
+  cursor: pointer;
+  width: auto;
+  font-size: 16px;
+  border-radius: 5px;
+  display: block;
+}
+
+/* Hover effect for the submit button */
+.submit-btn:hover {
+  background-color: #0056b3; /* Darker blue on hover */
+}
+
+/* Title styling for the form */
+.form-title {
+  font-family: 'Roboto', sans-serif;
+  margin-bottom: 20px;
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  color: #212529; /* Darker text color */
+}
+
+/* Grid layout for two-column input fields */
+.assistantship-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Two equal columns */
+  gap: 20px; /* Space between columns */
+}
+
+/* Ensure proper spacing for labels and inputs */
+.assistantship-form .input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.assistantship-form .input-label {
+  font-weight: 500;
+  font-size: 14px;
+  color: #181919;
+}
+
+.assistantship-form .mantine-TextInput-root,
+.assistantship-form .mantine-Select-root {
+  background-color: #F5F7F8; /* Uniform input background */
+  border-radius: 5px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .assistantship-grid {
+    grid-template-columns: 1fr; /* Single column for smaller screens */
+  }
+}

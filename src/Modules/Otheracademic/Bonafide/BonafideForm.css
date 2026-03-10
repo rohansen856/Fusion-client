@@ -1,0 +1,68 @@
+.bonafide-paper {
+  padding: 20px;  
+  max-width: 800px; 
+  margin: 20px auto; 
+  border-radius: 10px;
+  background-color: #F5F7F8; /* Keeping the background color same */
+}
+
+.bonafide-form {
+  display: flex;
+  flex-direction: column;
+  gap: 30px; 
+  
+}
+
+.form-input {
+  background-color: #e1f5fe; /* Brightened input field color */
+  border: none;  
+  padding: 10px; 
+}
+
+.submit-btn {
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  margin: 20px auto;  
+  padding: 10px 20px;  
+  cursor: pointer;
+  width: auto; 
+  font-size: 16px;  
+  border-radius: 5px;
+  display: block;  
+}
+
+.submit-btn:hover {
+  background-color: #0056b3;
+}
+
+.form-title {
+  font-family: 'Roboto', sans-serif;
+  margin-bottom: 30px;  
+  font-size: 24px;  
+}
+
+.bonafide-form .mantine-Grid-root {
+  gap: 40px;  
+}
+
+.mantine-Grid-root {
+  gap: 40px; 
+}
+
+.mantine-Grid-col {
+  padding: 0;
+}
+
+/* Ensure input fields have a uniform background color */
+.bonafide-form .mantine-TextInput-root,
+.bonafide-form .mantine-Select-root {
+  background-color: #F5F7F8; /* Brightened input field color */
+}
+
+.mantine-TextInput-label,
+.mantine-Select-label {
+  margin-bottom: 5px;
+  font-weight: 500;
+  font-size: 14px;
+}

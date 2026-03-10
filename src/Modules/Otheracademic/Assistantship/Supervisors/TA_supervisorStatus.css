@@ -1,0 +1,68 @@
+/* Paper container styling */
+.status-paper {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px  #343a40;
+}
+
+/* Title styling */
+.status-title {
+  color: #333;
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+/* Table styling */
+.status-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+/* Table headers */
+.status-table th {
+  background-color: #343a40;
+  color: white;
+  padding: 12px;
+  text-align: left;
+  font-weight: bold;
+}
+
+/* Table rows */
+.status-table td {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+/* Striped row styling */
+.status-table tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+/* Hover effect */
+.status-table tr:hover {
+  background-color: #f1f1f1;
+}
+
+/* Status styling */
+.status-table td:last-child {
+  font-weight: bold;
+}
+
+/* Approved status color */
+.status-table td:last-child:contains('Approved') {
+  color: #28a745;
+}
+
+/* Pending status color */
+.status-table td:last-child:contains('Pending') {
+  color: #ffc107;
+}
+
+/* Rejected status color */
+.status-table td:last-child:contains('Rejected') {
+  color: #dc3545;
+}

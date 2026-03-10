@@ -1,0 +1,36 @@
+/* leaveStatus.css */
+
+/* Make the table scrollable on smaller screens */
+.table-wrapper {
+    overflow-x: auto;
+  }
+  
+  .status-table {
+    width: 100%;
+    min-width: 800px; /* Forces the table to be wide */
+  }
+  
+  @media screen and (max-width: 768px) {
+    .status-table th, .status-table td {
+      font-size: 14px;
+      padding: 8px;
+    }
+    
+    /* Reduce padding and margin for smaller devices */
+    .status-title {
+      font-size: 1.5rem;
+    }
+  
+    .table-wrapper {
+      width: 100%;
+      padding: 0 10px;
+    }
+  }
+  
+  @media screen and (max-width: 480px) {
+    .status-table th, .status-table td {
+      font-size: 12px;
+      padding: 6px;
+    }
+  }
+  

@@ -1,0 +1,36 @@
+/* Wrapper around each table */
+.table-box {
+    border: 2px solid #ccc; /* Box border for the table */
+    padding: 1rem; /* Padding inside the box */
+    margin-bottom: 2rem; /* Spacing between the boxes */
+    border-radius: 8px; /* Rounded corners */
+    background-color: #f9f9f9; /* Light background color */
+  }
+  
+  /* Styling for the table itself */
+  .table-container {
+    margin: auto;
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .table-container th,
+  .table-container td {
+    border: 1px solid #ccc; /* Add borders between cells */
+    padding: 8px;
+    text-align: center;
+  }
+  
+  .table-container th {
+    background-color: #f0f0f0; /* Header background */
+    font-weight: bold;
+  }
+  
+  .table-container tbody tr:hover {
+    background-color: #f9f9f9; /* Highlight on hover */
+  }
+  
+  .table-container tbody tr:nth-child(even) {
+    background-color: #f2f2f2; /* Alternating row colors */
+  }
+  
