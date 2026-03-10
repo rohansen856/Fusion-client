@@ -1,4 +1,4 @@
-import { Stack, Text, Card, Image, Flex, Box } from "@mantine/core";
+import { Stack, Text, Card, Image, Flex, Box, Button } from "@mantine/core";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import PropTypes from "prop-types";
@@ -12,7 +12,7 @@ import WorkExperienceComponent from "./workExperienceComponent";
 import EducationCoursesComponent from "./educationCoursesComponent";
 import { getProfileDataRoute } from "../../../routes/dashboardRoutes";
 
-function InfoCard({ data }) {
+function InfoCard({ data, isEditable }) {
   return (
     <Card withBorder shadow="sm" radius="md" w={300}>
       <Card.Section>
@@ -39,22 +39,31 @@ function InfoCard({ data }) {
       <Text mt="xs" c="dimmed" size="sm">
         Student
       </Text>
+
+      {/* Conditionally render the "Edit Profile" button */}
+      {isEditable && (
+        <Button mt="md" variant="light" color="blue">
+          Edit Profile
+        </Button>
+      )}
     </Card>
   );
 }
 
-function Profile() {
+function Profile({ connectionRoute }) {
   const [activeTab, setActiveTab] = useState("0");
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const apiURL = connectionRoute || getProfileDataRoute;
 
   useEffect(() => {
     async function fetchProfile() {
       const token = localStorage.getItem("authToken");
       if (!token) return console.error("No authentication token found!");
       try {
-        const response = await axios.get(getProfileDataRoute, {
+        const response = await axios.get(apiURL, {
           headers: { Authorization: `Token ${token}` },
         });
         setProfileData(response.data);
@@ -66,28 +75,36 @@ function Profile() {
       }
     }
     fetchProfile();
-  }, []);
+  }, [[apiURL]]);
 
-  const tabItems = [
-    { title: "Profile" },
-    { title: "Skills & Technologies" },
-    { title: "Education & Courses" },
-    { title: "Work Experience" },
-    { title: "Achievements" },
-  ];
-  const tabToDisplay = [
-    <ProfileComponent data={profileData} />,
-    <SkillsTechComponent data={profileData?.skills} />,
-    <EducationCoursesComponent
-      education={profileData?.education}
-      courses={profileData?.course}
-    />,
-    <WorkExperienceComponent
-      experience={profileData?.experience}
-      project={profileData?.project}
-    />,
-    <AchievementsComponent achievements={profileData?.achievement} />,
-  ];
+  console.log(profileData);
+
+  // Conditionally define tabItems and tabToDisplay
+  const tabItems = connectionRoute
+    ? [{ title: "Profile" }] // Only show the Profile tab if connectionRoute is provided
+    : [
+        { title: "Profile" },
+        { title: "Skills & Technologies" },
+        { title: "Education & Courses" },
+        { title: "Work Experience" },
+        { title: "Achievements" },
+      ];
+
+  const tabToDisplay = connectionRoute
+    ? [<ProfileComponent data={profileData} isEditable={!connectionRoute} />] // Only display Profile if connectionRoute is provided
+    : [
+        <ProfileComponent data={profileData} isEditable={!connectionRoute} />,
+        <SkillsTechComponent data={profileData?.skills} />,
+        <EducationCoursesComponent
+          education={profileData?.education}
+          courses={profileData?.course}
+        />,
+        <WorkExperienceComponent
+          experience={profileData?.experience}
+          project={profileData?.project}
+        />,
+        <AchievementsComponent achievements={profileData?.achievement} />,
+      ];
 
   if (loading) return <p>Loading profile...</p>;
   if (error) return <p>{error}</p>;
@@ -109,7 +126,8 @@ function Profile() {
       >
         {tabToDisplay[activeTab]}
         <Box visibleFrom="sm">
-          <InfoCard data={profileData} />
+          {/* Pass the isEditable prop based on the connectionRoute */}
+          <InfoCard data={profileData} isEditable={!connectionRoute} />
         </Box>
       </Flex>
     </Stack>
@@ -133,6 +151,11 @@ InfoCard.propTypes = {
       }),
     }),
   }).isRequired,
+  isEditable: PropTypes.bool.isRequired,
+};
+
+Profile.propTypes = {
+  connectionRoute: PropTypes.string,
 };
 
 export default Profile;
