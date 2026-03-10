@@ -1,0 +1,72 @@
+.formContainer {
+    max-width: 85vw; /* Increase width for two-column layout */
+    margin: 3% auto;
+    padding: 3% 5%;
+    border-radius: 18px;
+    background-color: #ffffff;
+    border-left: 0.6rem solid #15ABFF;
+  }
+  
+  .formTitle {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #15ABFF;
+  }
+  
+  .fieldLabel {
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    @media (min-width: mantine-breakpoint-md) {
+      font-size: 1.5rem;
+    }
+  }
+  
+  .fileInputContainer {
+    display: flex;
+    align-items: center;
+  }
+  
+  .fileInputButton {
+    margin-right: 10px;
+  }
+  
+  .fileName {
+    font-weight: 500;
+  }
+
+  .dateInput {
+    width: 100%;
+    height: 2rem;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+  }
+
+  .submitButtonContainer {
+    display: flex;
+    justify-content: center; /* Change to flex-end to align right */
+    margin-top: 3%;
+  }
+  
+  .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(68, 64, 64, 0.5); /* Optional: to dim the background */
+    z-index: 1000; /* Ensure it appears on top of other content */
+  }
+  
+  .alert-box {
+    max-width: 30%;
+    padding: 20px;
+    background-color: white;
+    border-radius: 30px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
