@@ -1,0 +1,164 @@
+/* Table Container */
+.form-table-container {
+    margin: 20px auto;
+    padding: 10px;
+    background-color: #f7f8fc;
+  }
+  
+  /* Table */
+  .form-table-container .form-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 15px;
+    background-color: #ffffff;
+    border: 1px solid #545454;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  
+  /* Table Headers */
+  .form-table-container .table-header {
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: rgb(0, 0, 0);
+    background-color: #ffffff;
+    padding: 15px;
+    text-align: center;
+    border-bottom: 2px solid #545454;
+  }
+  
+  /* Table Row */
+  .form-table-container .table-row {
+    font-family: 'Roboto', sans-serif;
+    font-size: 14px;
+    background-color: #ffffff;
+    color: #333;
+    transition: background-color 0.3s ease;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    border: 1px solid #545454;
+  }
+  
+  /* Row Hover Effect */
+  .form-table-container .table-row:hover {
+    background-color: #f1f3f6;
+  }
+  
+  /* Data Cells */
+  .form-table-container .table-row td {
+    padding: 12px 20px;
+    text-align: center;
+    font-weight: 500;
+    color: #333;
+    border-top: none;
+    position: relative;
+    border-radius: 0;
+    border-right: 1px solid #545454;
+  }
+  
+  /* Remove border from last column */
+  .form-table-container .table-row td:last-child {
+    border-right: none;
+  }
+  
+  /* Action Links - View */
+  .form-table-container .text-link {
+    color: #333;
+    margin-left: 5px;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    transition: color 0.3s ease;
+  }
+  
+  /* Adding space between icon and text */
+  .form-table-container .text-link svg {
+    margin-right: 8px;
+    fill: #333;
+    transition: fill 0.3s ease;
+  }
+  
+  /* Hover Effects for Action Links */
+  .form-table-container .text-link:hover {
+    color: #15abff;
+  }
+  
+  .form-table-container .text-link:hover svg {
+    fill: #15abff;
+  }
+  
+  /* Links */
+  .form-table-container a {
+    color: #15abff;
+    text-decoration: none;
+  }
+  
+  .form-table-container a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Table Header Background */
+  .form-table-container .form-table thead {
+    background-color: #ffffff;
+  }
+  
+  .form-table-container .table-header {
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  
+  /* Rounded Corners for Table Header */
+  .form-table-container .form-table thead th:first-child {
+    border-top-left-radius: 12px;
+  }
+  
+  .form-table-container .form-table thead th:last-child {
+    border-top-right-radius: 12px;
+  }
+  
+  /* Rounding for Each Row */
+  .form-table-container .table-row td:first-child {
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
+  }
+  
+  .form-table-container .table-row td:last-child {
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+  }
+  
+  /* Special Case for Last Row */
+  .form-table-container .table-row:last-child td:first-child {
+    border-bottom-left-radius: 12px;
+  }
+  
+  .form-table-container .table-row:last-child td:last-child {
+    border-bottom-right-radius: 12px;
+  }
+
+  /* Status Field */
+.status {
+    font-weight: bold;
+  }
+  
+  /* View Button */
+  .text-link {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 12px;
+    transition: color 0.3s ease;
+  }
+  
+  .text-link svg {
+    margin-right: 8px;
+    transition: fill 0.3s ease;
+  }
