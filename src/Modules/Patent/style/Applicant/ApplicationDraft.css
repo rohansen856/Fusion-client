@@ -1,0 +1,53 @@
+/* Page title */
+#patent-system-draft-header-text {
+  font-size: 24px;
+  font-weight: 700;
+  color: #2d3748;
+  letter-spacing: 0.5px;
+  padding-left: 50px;
+  margin-bottom: 10px;
+}
+
+/* Saved drafts container for flex layout */
+#patent-system-draft-app-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  width: 100%;
+}
+
+/* Saved draft card */
+#patent-system-saved-draft-card {
+  flex: 1;
+  min-width: 40%;
+  max-width: 40%;
+  margin-left: 50px;
+  padding: 16px;
+  border-radius: 12px;
+  background-color: #ffffff;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#patent-system-saved-draft-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+
+/* Responsive behavior for smaller screens */
+@media (max-width: 768px) {
+  #patent-system-draft-app-container {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+
+  #patent-system-saved-draft-card {
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  #patent-system-draft-header-text {
+    padding-left: 10px;
+  }
+}

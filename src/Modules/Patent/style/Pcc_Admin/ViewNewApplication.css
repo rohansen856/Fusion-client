@@ -1,0 +1,311 @@
+/*========================================
+  Base & Container
+========================================*/
+#pms-pcc-new-app-detail-container1 {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  background-color: #f5f8f9;
+  padding: 2rem 4%;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
+.mobile-form-container {
+  padding: 1rem 2%;
+}
+
+/*========================================
+  Loader & Error States
+========================================*/
+#pms-pcc-loader-container,
+#pms-pcc-error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 0;
+  text-align: center;
+}
+
+#pms-pcc-error-container .mantine-Alert-root {
+  max-width: 600px;
+  width: 100%;
+}
+
+/*========================================
+  Header: Back Button & Title
+========================================*/
+#pms-pcc-new-app-detail-container1 > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+#pms-pcc-new-app-detail-container1 > div:first-child .mantine-Button {
+  margin-right: auto;
+  background: #ffffff;
+  border: 1px solid #dee2e6;
+  color: #1e66f5;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+#pms-pcc-new-app-detail-container1 > div:first-child .mantine-Button:hover {
+  background-color: #1e66f5;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+#pms-pcc-detail-page-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #1e293b;
+  text-align: center;
+  margin: 0;
+}
+
+.mobile-detail-page-title {
+  font-size: 1.5rem;
+}
+
+/*========================================
+  Action Buttons Section
+========================================*/
+#pms-pcc-action-buttons-card {
+  margin: 0 0 1rem;
+  max-width: none;
+  padding: 1rem 2rem;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+#pms-pcc-action-buttons-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+#pms-pcc-action-button {
+  min-width: 180px;
+  font-weight: 500;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Blue Download button */
+#pms-pcc-action-button[color="blue"] {
+  border: 2px solid #1e66f5;
+  color: #1e66f5;
+  background: transparent;
+}
+#pms-pcc-action-button[color="blue"]:hover {
+  background-color: #1e66f5;
+  color: white;
+}
+
+/* Green Forward button */
+#pms-pcc-action-button[color="green"] {
+  border: 2px solid #40c057;
+  color: #40c057;
+  background: transparent;
+}
+#pms-pcc-action-button[color="green"]:hover {
+  background-color: #40c057;
+  color: white;
+}
+
+/* Orange Modify button */
+#pms-pcc-action-button[color="orange"] {
+  border: 2px solid #fd7e14;
+  color: #fd7e14;
+  background: transparent;
+}
+#pms-pcc-action-button[color="orange"]:hover {
+  background-color: #fd7e14;
+  color: white;
+}
+
+/* Gray disabled/no-file button */
+#pms-pcc-download-button-wrapper .mantine-Button[color="gray"] {
+  border: 2px solid #adb5bd;
+  color: #adb5bd;
+  background: transparent;
+}
+#pms-pcc-download-button-wrapper .mantine-Button[color="gray"]:hover {
+  background-color: #adb5bd;
+  color: white;
+}
+
+/*========================================
+  Detail Form Content
+========================================*/
+#pms-pcc-pcc-form-content {
+  max-width: 1200px;
+  margin: 1rem auto 2rem;
+}
+
+/*----------------------------------------
+  FormField rows (boxed style)
+----------------------------------------*/
+#pms-pcc-form-field,
+#pms-pcc-form-field-with-download {
+  background-color: #ffffff;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-start;
+}
+
+#pms-pcc-form-field:last-child,
+#pms-pcc-form-field-with-download:last-child {
+  margin-bottom: 0;
+}
+
+#pms-pcc-field-label-container,
+#pms-pcc-form-field > #pms-pcc-field-label {
+  flex: 0 0 auto;
+}
+
+#pms-pcc-field-value {
+  flex: 1 1 auto;
+  background-color: #f8f9fa;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 1rem;
+  color: #334155;
+  word-break: break-word;
+}
+
+/*========================================
+  Section Cards (via FormSection)
+========================================*/
+#pms-pcc-detail-section {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin: 1.5rem auto;
+  max-width: 1200px;
+  padding: 1.5rem 2rem;
+}
+
+#pms-pcc-section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 1rem;
+}
+
+/*========================================
+  Key Dates Grid & Cards
+========================================*/
+#pms-pcc-key-dates-container {
+  margin-top: 1rem;
+}
+
+#pms-pcc-key-dates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+#pms-pcc-key-date-card {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#pms-pcc-key-date-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+#pms-pcc-key-date-title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #475569;
+  margin-bottom: 0.5rem;
+}
+
+#pms-pcc-key-date-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/*========================================
+  Applicants Cards
+========================================*/
+#pms-pcc-applicant-card {
+  background-color: #ffffff;
+  border-radius: 6px;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+/*========================================
+  Modals (override Mantine defaults)
+========================================*/
+.mantine-Modal-root .mantine-Modal-modal {
+  margin: 0 auto !important;
+}
+
+.mantine-Modal-root .mantine-Modal-inner {
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.mantine-Modal-title {
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.mantine-Modal-root .mantine-Modal-body {
+  padding: 1.5rem 2rem;
+}
+
+/*========================================
+  Responsive Adjustments
+========================================*/
+@media (max-width: 768px) {
+  #pms-pcc-new-app-detail-container1 {
+    padding: 1rem 2%;
+  }
+
+  #pms-pcc-pcc-form-content {
+    padding: 0 1rem;
+  }
+
+  #pms-pcc-action-buttons-group {
+    flex-direction: column;
+  }
+
+  #pms-pcc-key-dates-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+
+  #pms-pcc-detail-section {
+    padding: 1rem 1.5rem;
+    margin: 1rem 0;
+  }
+
+  #pms-pcc-detail-page-title {
+    font-size: 1.5rem;
+  }
+}

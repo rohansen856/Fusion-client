@@ -1,0 +1,222 @@
+#pms-insights-page {
+  width: 100%;
+  max-width: 1800px;
+  margin: auto;
+  box-sizing: border-box;
+}
+
+#pms-page-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+#pms-description {
+  color: #555;
+  margin-bottom: 1rem;
+}
+
+#pms-filter {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+#pms-year-select {
+  min-width: 120px;
+}
+
+#pms-insights-content {
+  display: flex;
+  gap: 2rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#pms-chart-section,
+#pms-table-section {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+#pms-chart-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#pms-legend {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+#pms-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#pms-legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+#pms-legend-label {
+  font-size: 0.9rem;
+  color: #333;
+}
+
+#pms-table-section {
+  min-width: 320px;
+}
+
+#pms-table-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 1rem;
+}
+
+#pms-table-section table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: none;
+  border: 1px solid #e0e7ef;
+}
+
+#pms-table-section th,
+#pms-table-section td {
+  padding: 12px 16px;
+  text-align: left;
+  border: 1px solid #e0e7ef; /* Add border for all cells */
+}
+
+#pms-table-section thead {
+  background-color: #f5f7f8;
+  color: #333;
+}
+
+#pms-table-section thead tr {
+  background-color: #f0f0f0;
+}
+#pms-table-section th {
+  color: #000;
+  font-weight: 600;
+  padding: 12px 16px;
+  border-bottom: 2px solid #e0e7ef;
+  border-top: 1px solid #e0e7ef;
+}
+
+#pms-table-section tbody tr:nth-child(even) {
+  background-color: #f0f4fa;
+}
+#pms-table-section tbody tr:nth-child(odd) {
+  background-color: #f8fbff;
+}
+
+#pms-table-section tbody tr:hover {
+  background-color: #f0f4fa;
+  transition: background 0.15s;
+}
+
+#pms-download-csv-button {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+#pms-download-button {
+  background-color: #fff;
+  color: #0073e6;
+  padding: 10px 20px;
+  border-radius: 5px;
+  transition: all 0.1s ease;
+  font-weight: 500;
+  margin-top: 0;
+  margin-left: 0;
+  border: 1px solid #0073e6;
+}
+
+#pms-download-button:hover {
+  background-color: #0073e6;
+  color: #fff;
+}
+
+/* Responsive Styles */
+@media (max-width: 1100px) {
+  #pms-insights-content {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  #pms-table-section,
+  #pms-chart-section {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 700px) {
+  #pms-insights-page {
+    padding: 0.5rem;
+  }
+  #pms-description {
+    font-size: 0.95rem;
+  }
+  #pms-filter {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  #pms-table-section th,
+  #pms-table-section td {
+    padding: 8px 8px;
+    font-size: 0.95rem;
+  }
+  #pms-table-title {
+    font-size: 1rem;
+  }
+  #pms-download-csv-button {
+    margin-top: 1rem;
+  }
+  #pms-download-button {
+    width: 100%;
+    font-size: 1rem;
+    padding: 8px 0;
+  }
+  #pms-legend-label {
+    font-size: 0.85rem;
+  }
+  #pms-legend-color {
+    width: 14px;
+    height: 14px;
+  }
+  #pms-chart-section svg {
+    height: 180px !important;
+    min-height: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  #pms-table-section th,
+  #pms-table-section td {
+    font-size: 0.85rem;
+    padding: 6px 4px;
+  }
+  #pms-table-title {
+    font-size: 0.95rem;
+  }
+  #pms-legend-label {
+    font-size: 0.8rem;
+  }
+}

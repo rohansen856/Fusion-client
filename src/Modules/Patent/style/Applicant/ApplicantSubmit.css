@@ -1,0 +1,101 @@
+/* Page title */
+#pms-submit-header-text {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding-left: 50px;
+  margin-bottom: 10px;
+}
+
+/* Card container */
+#pms-submit-card-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+/* Application card */
+#pms-submit-application-card {
+  flex: 1;
+  min-width: 45%;
+  max-width: 45%;
+  margin-left: 0;
+  padding: 25px;
+  border-radius: 12px;
+  background-color: #ffffff;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#pms-submit-application-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Card title */
+#pms-submit-card-title {
+  font-size: 22px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: #2b3547;
+}
+
+/* Card details */
+#pms-submit-card-details {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+/* Card description */
+#pms-submit-card-description {
+  font-size: 14px;
+  color: #4a5568;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+/* Start Application button */
+#pms-start-application-button {
+  margin-top: 16px;
+  background-color: #fff;
+  border: 1px solid #15abff;
+  color: #15abff;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#pms-start-application-button:hover {
+  background-color: #15abff;
+  color: #fff;
+}
+
+/* Responsive behavior for smaller screens */
+@media (max-width: 768px) {
+  #pms-submit-card-container {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+
+  #pms-submit-application-card {
+    min-width: 100%;
+    max-width: 100%;
+  }
+
+  #pms-submit-header-text {
+    padding-left: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  #pms-submit-header-text {
+    padding-left: 8px;
+    font-size: 26px;
+  }
+
+  #pms-submit-card-container {
+    margin-left: 8px;
+    margin-right: 8px;
+  }
+}

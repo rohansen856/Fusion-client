@@ -1,0 +1,123 @@
+/* Main Container */
+#pms-pcc-attorney-details-container {
+  width: 100%;
+  padding: 0 50px;
+  background-color: transparent;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+/* Heading */
+#pms-pcc-attorney-details-heading {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* Top Navigation Bar */
+#pms-pcc-top-nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+/* Unified Button Styling */
+#pms-pcc-attorney-back-btn,
+#pms-pcc-edit-details-button,
+#pms-pcc-save-button,
+#pms-pcc-cancel-button {
+  border: 1px solid #1e66f5;
+  color: #1e66f5;
+  background-color: white;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+#pms-pcc-attorney-back-btn:hover,
+#pms-pcc-edit-details-button:hover,
+#pms-pcc-save-button:hover,
+#pms-pcc-cancel-button:hover {
+  background-color: #1e66f5;
+  color: white;
+}
+
+/* Grid Layout - Two Fields Per Row */
+#pms-pcc-attorney-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2.5rem;
+}
+
+/* Detail Item Box */
+.detail-item {
+  background-color: #ffffff;
+  border-radius: 10px;
+  border: 2px solid #f0f0f0;
+  padding: 1.25rem 1.5rem;
+  transition: background-color 0.3s ease, border-left 0.3s ease;
+}
+
+
+/* Detail Text */
+#pms-pcc-attorney-detail {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #333;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* Icons */
+#pms-pcc-icon {
+  color: #1e66f5;
+  flex-shrink: 0;
+}
+
+/* Input Field Style */
+#pms-pcc-edit-input {
+  margin-top: 0.4rem;
+}
+
+/* Assigned Cases - Full Width Below Grid */
+#pms-pcc-detail-item-assigned-cases {
+  width: 100%;
+  background-color: #fff;
+  border: 2px solid #f0f0f0;
+  border-radius: 10px;
+  padding: 1.5rem;
+}
+
+/* Case List */
+#pms-pcc-assigned-cases-list {
+  margin-top: 1rem;
+  padding-left: 1.2rem;
+  border-left: 4px solid #1e66f5;
+}
+
+#pms-pcc-assigned-case-item {
+  margin-bottom: 0.6rem;
+}
+
+/* No Cases Text */
+#pms-pcc-no-applications-text {
+  margin-top: 1rem;
+  font-style: italic;
+  color: #6c757d;
+}
+
+/* Responsive Adjustments */
+@media screen and (max-width: 768px) {
+  #pms-pcc-attorney-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #pms-pcc-top-nav-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}

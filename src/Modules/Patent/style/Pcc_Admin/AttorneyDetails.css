@@ -1,0 +1,156 @@
+#pms-pcc-attorney-details-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
+#pms-pcc-attorney-details-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 32px;
+  position: relative;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+#pms-pcc-attorney-details-back-btn {
+  padding: 8px 16px;
+  font-weight: 500;
+  color: #666;
+  background-color: transparent;
+  border: none;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+#pms-pcc-attorney-details-back-btn:hover {
+  background-color: transparent;
+  color: #333;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#pms-pcc-attorney-details-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 auto;
+  text-align: center;
+  flex: 1;
+}
+
+#pms-pcc-attorney-details-content {
+  display: flex;
+  gap: 48px;
+  margin-bottom: 32px;
+}
+
+#pms-pcc-attorney-details-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+#pms-pcc-attorney-details-field {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#pms-pcc-attorney-details-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #495057;
+}
+
+#pms-pcc-attorney-details-icon {
+  color: #228be6;
+  flex-shrink: 0;
+}
+
+#pms-pcc-attorney-details-input {
+  width: 100%;
+}
+
+#pms-pcc-attorney-details-input #pms-pcc-mantine-TextInput-input {
+  height: 40px;
+  font-size: 14px;
+  border-radius: 4px;
+  border: 1px solid #ced4da;
+  transition: border-color 0.2s ease;
+  padding: 0 12px;
+}
+
+#pms-pcc-attorney-details-input #pms-pcc-mantine-TextInput-input:focus {
+  border-color: #228be6;
+  box-shadow: 0 0 0 2px rgba(34, 139, 230, 0.1);
+}
+
+#pms-pcc-attorney-details-item {
+  padding: 12px 16px;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #495057;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+#pms-pcc-attorney-details-footer {
+  display: flex;
+  justify-content: center;
+  padding-top: 32px;
+  border-top: 1px solid #e9ecef;
+  margin-top: 16px;
+}
+
+#pms-pcc-attorney-details-submit-btn {
+  width: 240px;
+  height: 40px;
+  font-size: 14px;
+  font-weight: 500;
+  background-color: #228be6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+#pms-pcc-attorney-details-submit-btn:hover {
+  background-color: #1c7ed6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  #pms-pcc-attorney-details-container {
+    padding: 24px;
+  }
+
+  #pms-pcc-attorney-details-content {
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  #pms-pcc-attorney-details-section {
+    gap: 24px;
+  }
+
+  #pms-pcc-attorney-details-title {
+    font-size: 20px;
+  }
+
+  #pms-pcc-attorney-details-submit-btn {
+    width: 100%;
+    max-width: 240px;
+  }
+} 

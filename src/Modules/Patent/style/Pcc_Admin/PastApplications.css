@@ -1,0 +1,173 @@
+/* Container */
+#pms-pcc-past-past-app-status-applications-container {
+  margin-left: 50px;
+  margin-top: 0;
+  width: 100%;
+  max-width: 1800px;
+  background: #f5f7f8;
+  min-height: 100vh;
+  padding-bottom: 32px;
+}
+
+/* Title */
+#pms-pcc-past-past-app-status-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 18px;
+  margin-top: 0;
+  text-align: left;
+  letter-spacing: 0.01em;
+}
+
+/* Loading/Error/Empty */
+#pms-pcc-past-loading-container,
+#pms-pcc-past-error-container,
+#pms-pcc-past-empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  margin: 32px 0;
+  text-align: center;
+}
+
+/* Table Container */
+#pms-pcc-past-past-app-outerContainer {
+  overflow: hidden;
+  margin-right: 50px;
+  margin-top: 12px;
+}
+
+/* Table */
+.mantine-Table-root,
+#pms-pcc-past-past-app-outerContainer table {
+  width: 100%;
+  border-collapse: collapse;
+  background: transparent;
+}
+
+#pms-pcc-past-past-app-outerContainer th {
+  font-size: 13px;
+}
+
+#pms-pcc-past-past-app-outerContainer td {
+  font-size: 12px;
+}
+
+#pms-pcc-past-fusionTableHeader th {
+  padding: 14px 18px;
+  font-weight: 500;
+  color: #333;
+  text-align: left;
+  border-bottom: 2px solid #e5e7eb;
+  background: #f8f9fa;
+  font-size: 20px;
+}
+
+#pms-pcc-past-past-app-outerContainer td {
+  padding: 14px 18px;
+  color: #333;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 16px;
+  vertical-align: middle;
+}
+
+/* Alternate row colors */
+#pms-pcc-past-past-app-outerContainer tbody tr:nth-child(odd) {
+  background: #fff;
+}
+#pms-pcc-past-past-app-outerContainer tbody tr:nth-child(even) {
+  background: #f8f9fa;
+}
+
+/* Hover */
+#pms-pcc-past-past-app-outerContainer tbody tr:hover {
+  background: #eaf4fa;
+  transition: background 0.15s;
+}
+
+/* Status Badge */
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  background: #bdbdbd;
+}
+.status-badge.approved { background: #4caf50; }
+.status-badge.rejected { background: #e53935; }
+.status-badge.pending { background: #ffb300; }
+.status-badge.default { background: #bdbdbd; }
+
+/* View Button */
+.view-button,
+#pms-pcc-past-past-app-outerContainer .mantine-Button-root {
+  color: #0073e6;
+  background: #fff;
+  border: 1px solid #0073e6;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.18s;
+  font-size: 0.98rem;
+}
+
+.view-button:hover,
+#pms-pcc-past-past-app-outerContainer .mantine-Button-root:hover {
+  background: #f0f7ff;
+  color: #2563eb;
+  border-color: #2563eb;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  #pms-pcc-past-past-app-status-applications-container {
+    margin-left: 8px;
+    padding-bottom: 16px;
+  }
+  #pms-pcc-past-past-app-outerContainer {
+    margin-right: 8px;
+  }
+  .status-card {
+    width: 100%;
+    margin-bottom: 18px;
+  }
+}
+
+@media (max-width: 600px) {
+  #pms-pcc-past-past-app-status-applications-container {
+    margin-left: 0;
+    padding-bottom: 8px;
+  }
+  #pms-pcc-past-past-app-outerContainer {
+    margin-right: 0;
+    border-radius: 7px;
+  }
+  #pms-pcc-past-past-app-status-title {
+    font-size: 1.25rem;
+    margin-bottom: 10px;
+  }
+  .status-card {
+    padding: 14px;
+    border-radius: 7px;
+  }
+  #pms-pcc-past-fusionTableHeader th,
+  #pms-pcc-past-past-app-outerContainer td {
+    padding: 8px 6px;
+    font-size: 0.92rem;
+  }
+}
+
+/* Utility */
+.text-muted {
+  color: #888 !important;
+}
