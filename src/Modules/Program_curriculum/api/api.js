@@ -51,6 +51,16 @@ export const fetchAllProgrammes = async () => {
   }
 };
 
+export const fetchStudentMyInfo = async () => {
+  const token = localStorage.getItem("authToken");
+  if (!token) throw new Error("Authorization token is required");
+  const response = await axios.get(
+    `${BASE_URL}/programme_curriculum/api/student_my_info/`,
+    { headers: { Authorization: `Token ${token}` } },
+  );
+  return response.data;
+};
+
 export const fetchSemestersOfCurriculumData = async (id) => {
   try {
     const response = await axios.get(

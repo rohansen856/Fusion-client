@@ -4,99 +4,119 @@ import {
   Table,
   Flex,
   Container,
-  TextInput,
-  Grid,
   Button,
+  TextInput,
+  Text,
 } from "@mantine/core";
-import { useMediaQuery } from "@mantine/hooks";
 import { Link } from "react-router-dom";
-import { fetchWorkingCurriculumsData } from "./api/api";
+import { useSelector } from "react-redux";
+import { fetchWorkingCurriculumsData, fetchStudentMyInfo } from "./api/api";
 
 function ViewAllWorkingCurriculums() {
-  const [filters, setFilters] = useState({
-    name: "",
-    version: "",
-    batch: "",
-    semesters: "",
-  });
+  const role = useSelector((state) => state.user.role);
+  const isStudent = role === "student";
+  const [searchTerm, setSearchTerm] = useState("");
   const [curriculums, setCurriculums] = useState([]);
   const [loading, setLoading] = useState(true);
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [error, setError] = useState(null);
+  const [studentCurriculumIds, setStudentCurriculumIds] = useState(null);
 
-  // Fetch data on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const cachedData = localStorage.getItem("curriculumsCache");
-        const timestamp = localStorage.getItem("curriculumsTimestamp");
-        const isCacheValid =
-          timestamp && Date.now() - parseInt(timestamp, 10) < 10 * 60 * 1000;
-        // 10 min cache
+        const curriculaPromise = (async () => {
+          const cachedData = localStorage.getItem("curriculumsCache");
+          const timestamp = localStorage.getItem("curriculumsTimestamp");
+          const isCacheValid =
+            timestamp && Date.now() - parseInt(timestamp, 10) < 10 * 60 * 1000;
 
-        if (cachedData && isCacheValid) {
-          setCurriculums(JSON.parse(cachedData) || []);
-        } else {
+          if (cachedData && isCacheValid) {
+            return JSON.parse(cachedData) || [];
+          }
           const token = localStorage.getItem("authToken");
           if (!token) throw new Error("Authorization token is missing");
-
           const data = await fetchWorkingCurriculumsData(token);
-          setCurriculums(data.curriculums || []);
-
-          localStorage.setItem(
-            "curriculumsCache",
-            JSON.stringify(data.curriculums),
-          );
+          const list = data.curriculums || [];
+          localStorage.setItem("curriculumsCache", JSON.stringify(list));
           localStorage.setItem("curriculumsTimestamp", Date.now().toString());
+          return list;
+        })();
+
+        const studentInfoPromise = isStudent ? fetchStudentMyInfo() : Promise.resolve(null);
+
+        const [list, info] = await Promise.all([curriculaPromise, studentInfoPromise]);
+
+        setCurriculums(list);
+
+        if (info && Array.isArray(info.curriculum_ids)) {
+          setStudentCurriculumIds(info.curriculum_ids);
         }
-      } catch (error) {
-        console.error("Error fetching curriculums:", error);
+      } catch (err) {
+        const msg =
+          err?.response?.data?.error ||
+          "Failed to load curriculum data. Contact the academic office.";
+        setError(msg);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [isStudent]);
 
-  // Filter data based on input filters
-  const filteredData = curriculums.filter((item) => {
+  const baseData =
+    isStudent && Array.isArray(studentCurriculumIds) && studentCurriculumIds.length > 0
+      ? curriculums.filter((c) => studentCurriculumIds.includes(c.id))
+      : curriculums;
+
+  const filteredData = baseData.filter((item) => {
+    const s = searchTerm.toLowerCase();
     return (
-      item.name.toLowerCase().includes(filters.name.toLowerCase()) &&
-      item.version.toLowerCase().includes(filters.version.toLowerCase()) &&
-      (item.batch || []).some((b) =>
-        b.toLowerCase().includes(filters.batch.toLowerCase()),
-      ) &&
-      item.semesters.toString().includes(filters.semesters)
+      item.name.toLowerCase().includes(s) ||
+      item.version.toLowerCase().includes(s) ||
+      (item.batch || []).some((b) => b.toLowerCase().includes(s)) ||
+      item.semesters.toString().includes(s)
     );
   });
+
   const cellStyle = {
     padding: "15px 20px",
     textAlign: "center",
     borderRight: "1px solid #d3d3d3",
   };
-  // Generate table rows with alternating row colors
-  const rows = filteredData.map((curriculum, index) => (
+
+  const rows = filteredData.map((element, index) => (
     <tr
-      key={curriculum.id}
+      key={element.id}
       style={{ backgroundColor: index % 2 === 0 ? "#FFFFFF" : "#E6F7FF" }}
     >
       <td style={cellStyle}>
         <Link
-          to={`/programme_curriculum/stud_curriculum_view/${curriculum.id}`}
+          to={`/programme_curriculum/stud_curriculum_view/${element.id}`}
           style={{ color: "#3498db", textDecoration: "none" }}
         >
-          {curriculum.name}
+          {element.name}
         </Link>
       </td>
-      <td style={cellStyle}>{curriculum.version}</td>
-      <td style={cellStyle}>
-        {curriculum.batch && curriculum.batch.length > 0
-          ? curriculum.batch.join(", ")
-          : "No batches available"}
+      <td style={cellStyle}>{element.version}</td>
+      <td style={{ padding: "15px 20px", borderRight: "1px solid #d3d3d3", textAlign: "center" }}>
+        {element.batch && element.batch.length > 0
+          ? element.batch.map((b, i) => <div key={i}>{b}</div>)
+          : <div>No batches available</div>}
       </td>
-      <td style={cellStyle}>{curriculum.semesters}</td>
+      <td style={{ padding: "15px 20px", textAlign: "center" }}>
+        {element.semesters}
+      </td>
     </tr>
   ));
+
+  if (error) {
+    return (
+      <Container>
+        <Text color="red">{error}</Text>
+      </Container>
+    );
+  }
 
   return (
     <MantineProvider
@@ -105,125 +125,65 @@ function ViewAllWorkingCurriculums() {
       withNormalizeCSS
     >
       <Container style={{ padding: "20px", maxWidth: "100%" }}>
-        <Flex justify="flex-start" align="center" mb={10}>
-          <Button variant="filled" style={{ marginRight: "10px" }}>
-            Curriculums
-          </Button>
+        <Flex justify="space-between" align="center" mb={20}>
+          <Button variant="filled">Curriculums</Button>
+          <TextInput
+            placeholder="Search by name, version, batch, or semesters..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.currentTarget.value)}
+            style={{ width: "400px" }}
+          />
         </Flex>
         <hr />
-        <Grid>
-          {isMobile && (
-            <Grid.Col span={12}>
-              {[
-                { label: "Name", field: "name" },
-                { label: "Version", field: "version" },
-                { label: "Batch", field: "batch" },
-                { label: "No. of Semesters", field: "semesters" },
-              ].map((filter) => (
-                <TextInput
-                  key={filter.field}
-                  label={`${filter.label}:`}
-                  value={filters[filter.field]}
-                  onChange={(e) =>
-                    setFilters({
-                      ...filters,
-                      [filter.field]: e.target.value,
-                    })
-                  }
-                  placeholder={`Search by ${filter.label}`}
-                  mb={5}
-                />
-              ))}
-            </Grid.Col>
-          )}
-          <Grid.Col span={isMobile ? 12 : 9}>
-            {/* Table Section */}
-            <div
-              style={{
-                maxHeight: "61vh",
-                overflowY: "auto",
-                border: "1px solid #d3d3d3",
-                borderRadius: "10px",
-                scrollbarWidth: "none",
-              }}
-            >
-              <style>
-                {`
-                  div::-webkit-scrollbar {
-                    display: none;
-                  }
-                `}
-              </style>
-              <Table style={{ backgroundColor: "white", padding: "20px" }}>
-                <thead>
-                  <tr>
-                    {["Name", "Version", "Batch", "No. of Semesters"].map(
-                      (header, index) => (
-                        <th
-                          key={index}
-                          style={{
-                            padding: "15px 20px",
-                            backgroundColor: "#C5E2F6",
-                            color: "#3498db",
-                            fontSize: "16px",
-                            textAlign: "center",
-                            borderRight:
-                              index < 3 ? "1px solid #d3d3d3" : "none",
-                          }}
-                        >
-                          {header}
-                        </th>
-                      ),
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan="4" style={{ textAlign: "center" }}>
-                        Loading...
-                      </td>
-                    </tr>
-                  ) : rows.length > 0 ? (
-                    rows
-                  ) : (
-                    <tr>
-                      <td colSpan="4" style={{ textAlign: "center" }}>
-                        No curriculums found
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </Table>
-            </div>
-          </Grid.Col>
-
-          {/* Filter Section */}
-          {!isMobile && (
-            <Grid.Col span={3}>
-              {[
-                { label: "Name", field: "name" },
-                { label: "Version", field: "version" },
-                { label: "Batch", field: "batch" },
-                { label: "No. of Semesters", field: "semesters" },
-              ].map((filter) => (
-                <TextInput
-                  key={filter.field}
-                  label={`${filter.label}:`}
-                  value={filters[filter.field]}
-                  onChange={(e) =>
-                    setFilters({
-                      ...filters,
-                      [filter.field]: e.target.value,
-                    })
-                  }
-                  placeholder={`Search by ${filter.label}`}
-                  mb={5}
-                />
-              ))}
-            </Grid.Col>
-          )}
-        </Grid>
+        <div
+          style={{
+            maxHeight: "61vh",
+            overflowY: "auto",
+            border: "1px solid #d3d3d3",
+            borderRadius: "10px",
+            scrollbarWidth: "none",
+          }}
+        >
+          <style>{`div::-webkit-scrollbar { display: none; }`}</style>
+          <Table style={{ backgroundColor: "white", padding: "20px" }}>
+            <thead>
+              <tr>
+                {["Name", "Version", "Batch", "No. of Semesters"].map((header, i) => (
+                  <th
+                    key={i}
+                    style={{
+                      padding: "15px 20px",
+                      backgroundColor: "#C5E2F6",
+                      color: "#3498db",
+                      fontSize: "16px",
+                      textAlign: "center",
+                      borderRight: i < 3 ? "1px solid #d3d3d3" : "none",
+                    }}
+                  >
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="4" style={{ textAlign: "center", padding: "20px" }}>
+                    Loading...
+                  </td>
+                </tr>
+              ) : rows.length > 0 ? (
+                rows
+              ) : (
+                <tr>
+                  <td colSpan="4" style={{ textAlign: "center", padding: "20px" }}>
+                    No curriculums found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </Table>
+        </div>
       </Container>
     </MantineProvider>
   );

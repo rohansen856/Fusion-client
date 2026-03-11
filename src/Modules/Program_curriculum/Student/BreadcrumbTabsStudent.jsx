@@ -16,7 +16,6 @@ function BreadcrumbTabs() {
       url: "/programme_curriculum/view_all_working_curriculums",
     },
     { title: "Discipline", url: "/programme_curriculum/stud_discipline_view" },
-    { title: "Batches", url: "/programme_curriculum/student_batches" },
     { title: "Courses", url: "/programme_curriculum/student_courses" },
   ];
 

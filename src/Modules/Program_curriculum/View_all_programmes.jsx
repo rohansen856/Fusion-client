@@ -12,15 +12,19 @@ import {
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { Link } from "react-router-dom";
-import { fetchAllProgrammes } from "./api/api";
+import { useSelector } from "react-redux";
+import { fetchAllProgrammes, fetchStudentMyInfo } from "./api/api";
 
 function ViewAllProgrammes() {
+  const role = useSelector((state) => state.user.role);
+  const isStudent = role === "student";
   const [activeSection, setActiveSection] = useState("ug"); // Default to UG
   const [ugData, setUgData] = useState([]); // State to store UG programs
   const [pgData, setPgData] = useState([]); // State to store PG programs
   const [phdData, setPhdData] = useState([]); // State to store PhD programs
   const [loading, setLoading] = useState(true); // Loading state
   const [error, setError] = useState(null); // Error state
+  const [studentProgrammeType, setStudentProgrammeType] = useState(null);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [programmeFilter, setProgrammeFilter] = useState("");
   const [disciplineFilter, setDisciplineFilter] = useState("");
@@ -58,6 +62,25 @@ function ViewAllProgrammes() {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (!isStudent) return;
+    const loadStudentInfo = async () => {
+      try {
+        const info = await fetchStudentMyInfo();
+        if (info && info.programme_type) {
+          setStudentProgrammeType(info.programme_type);
+          setActiveSection(info.programme_type);
+        }
+      } catch (err) {
+        const msg =
+          err?.response?.data?.error ||
+          "Failed to load your programme info. Contact the academic office.";
+        setError(msg);
+      }
+    };
+    loadStudentInfo();
+  }, [isStudent]);
 
   const applyFilters = (data) => {
     return data.filter(
@@ -134,26 +157,33 @@ function ViewAllProgrammes() {
       <Container style={{ padding: "20px", maxWidth: "100%" }}>
         {/* Buttons for Section Selection */}
         <Flex justify="flex-start" align="center" mb={10}>
-          <Button
-            variant={activeSection === "ug" ? "filled" : "outline"}
-            onClick={() => setActiveSection("ug")}
-            style={{ marginRight: "10px" }}
-          >
-            UG: Undergraduate
-          </Button>
-          <Button
-            variant={activeSection === "pg" ? "filled" : "outline"}
-            onClick={() => setActiveSection("pg")}
-            style={{ marginRight: "10px" }}
-          >
-            PG: Post Graduate
-          </Button>
-          <Button
-            variant={activeSection === "phd" ? "filled" : "outline"}
-            onClick={() => setActiveSection("phd")}
-          >
-            PhD: Doctor of Philosophy
-          </Button>
+          {(!isStudent || studentProgrammeType === "ug") && (
+            <Button
+              variant={activeSection === "ug" ? "filled" : "outline"}
+              onClick={() => !isStudent && setActiveSection("ug")}
+              style={{ marginRight: "10px", cursor: isStudent ? "default" : "pointer" }}
+            >
+              UG: Undergraduate
+            </Button>
+          )}
+          {(!isStudent || studentProgrammeType === "pg") && (
+            <Button
+              variant={activeSection === "pg" ? "filled" : "outline"}
+              onClick={() => !isStudent && setActiveSection("pg")}
+              style={{ marginRight: "10px", cursor: isStudent ? "default" : "pointer" }}
+            >
+              PG: Post Graduate
+            </Button>
+          )}
+          {(!isStudent || studentProgrammeType === "phd") && (
+            <Button
+              variant={activeSection === "phd" ? "filled" : "outline"}
+              onClick={() => !isStudent && setActiveSection("phd")}
+              style={{ cursor: isStudent ? "default" : "pointer" }}
+            >
+              PhD: Doctor of Philosophy
+            </Button>
+          )}
         </Flex>
         <hr />
 

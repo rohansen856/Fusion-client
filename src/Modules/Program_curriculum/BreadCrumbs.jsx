@@ -24,7 +24,6 @@ const basePages = [
   "view_all_programmes",
   "view_all_working_curriculums",
   "stud_discipline_view",
-  "student_batches",
   "student_courses",
 ];
 
