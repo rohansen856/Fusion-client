@@ -10,8 +10,8 @@ import {
   NumberInput,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import axios from "axios";
 import { DateInput, TimeInput } from "@mantine/dates";
+import axios from "../api";
 import {
   fetchFormFieldsRoute,
   ApplyForPlacementRoute,

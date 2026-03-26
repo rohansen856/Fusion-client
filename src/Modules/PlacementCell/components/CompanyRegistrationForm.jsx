@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import {
   TextInput,
   Textarea,
@@ -13,6 +12,7 @@ import {
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { MantineReactTable } from "mantine-react-table";
+import axios from "../api";
 import { fetchRegistrationRoute } from "../../../routes/placementCellRoutes";
 
 function CompanyRegistrationForm() {

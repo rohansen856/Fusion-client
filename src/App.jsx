@@ -24,15 +24,17 @@ import PendingReqs from "./Modules/Visitors_Hostel/pendingRequests.jsx";
 import { DesignationsProvider } from "./Modules/Iwd/helper/designationContext";
 import { WorkProvider } from "./Modules/Iwd/helper/WorkContext";
 
-const PlacementCellPage = lazy(() => import("./Modules/PlacementCell"));
+const PlacementCellPage = lazy(
+  () => import("./Modules/PlacementCell/PlacementCell"),
+);
 const JobApplicationForm = lazy(
   () => import("./Modules/PlacementCell/ApplyForPlacementForm"),
 );
 const PlacementEventHandeling = lazy(
-  () => import("./Modules/PlacementCell/components/PlacementEventHandeling"),
+  () => import("./Modules/PlacementCell/PlacementEventHandeling"),
 );
 const ApplicationStatusTimeline = lazy(
-  () => import("./Modules/PlacementCell/components/Timeline"),
+  () => import("./Modules/PlacementCell/Timeline"),
 );
 
 const HealthCenter = lazy(() => import("./Modules/Health Center"));

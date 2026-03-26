@@ -9,9 +9,9 @@ import {
   Title,
   Tabs,
 } from "@mantine/core";
-import axios from "axios";
 import { useSelector } from "react-redux";
 import { notifications } from "@mantine/notifications";
+import axios from "../api";
 import AddPlacementEventForm from "./AddPlacementEventForm";
 import PlacementScheduleCard from "./PlacementScheduleCard";
 import { fetchPlacementScheduleRoute } from "../../../routes/placementCellRoutes";

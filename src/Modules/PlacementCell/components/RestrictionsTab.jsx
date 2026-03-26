@@ -14,8 +14,8 @@ import {
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { Pencil, Trash } from "@phosphor-icons/react";
-import axios from "axios";
 import { MantineReactTable, useMantineReactTable } from "mantine-react-table";
+import axios from "../api";
 import { fetchRestrictionsRoute } from "../../../routes/placementCellRoutes";
 
 const columns = [

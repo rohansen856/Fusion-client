@@ -6,9 +6,9 @@ import startOfWeek from "date-fns/startOfWeek";
 import getDay from "date-fns/getDay";
 import enUS from "date-fns/locale/en-US";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import axios from "axios";
 import { Container, Title } from "@mantine/core";
 import { useNavigate } from "react-router-dom";
+import axios from "../api";
 import { calendarEventsRoute } from "../../../routes/placementCellRoutes";
 
 const locales = {

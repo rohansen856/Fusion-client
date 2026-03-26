@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button, Checkbox, Group, Text, Title } from "@mantine/core";
-import axios from "axios";
+import axios from "../api";
 import { downloadCVRoute } from "../../../routes/placementCellRoutes";
 
 const getCookie = (name) => {

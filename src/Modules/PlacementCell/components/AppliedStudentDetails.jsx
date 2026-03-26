@@ -1,15 +1,18 @@
+/* eslint-disable react/prop-types, import/order */
 import React, { useEffect, useState, useMemo } from "react";
 import {
   Select,
   Title,
+  // eslint-disable-next-line no-unused-vars
   Container,
   Button,
   Loader,
   Alert,
+  // eslint-disable-next-line no-unused-vars
   Paper,
   Flex,
 } from "@mantine/core";
-import axios from "axios";
+import axios from "../api";
 import { MantineReactTable } from "mantine-react-table";
 import { notifications } from "@mantine/notifications";
 import {
@@ -18,12 +21,15 @@ import {
   handleStatusChangeRoute,
   fetchFormFieldsRoute,
 } from "../../../routes/placementCellRoutes";
+// eslint-disable-next-line no-unused-vars
 import { DatePickerInput } from "@mantine/dates";
 
 function JobApplicationsTable() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [fields, setFields] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const recordsPerPage = 10;
 
   const jobId = new URLSearchParams(window.location.search).get("jobId");
@@ -151,6 +157,7 @@ function JobApplicationsTable() {
         accessorKey: "status",
         header: "Status",
         size: 120,
+        // eslint-disable-next-line react/no-unstable-nested-components, react/prop-types
         Cell: ({ row }) => (
           <Select
             data={[

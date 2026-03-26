@@ -11,14 +11,14 @@ import {
   Title,
   ActionIcon,
 } from "@mantine/core";
-import axios from "axios";
 import { notifications } from "@mantine/notifications";
+import { Trash } from "@phosphor-icons/react";
+import axios from "../api";
 import {
   debarredStatusRoute,
   fetchDebaredlistRoute,
   sendNotificationRoute,
 } from "../../../routes/placementCellRoutes";
-import { Trash } from "@phosphor-icons/react";
 
 const columns = [
   { accessorKey: "roll_no", header: "Roll No" },

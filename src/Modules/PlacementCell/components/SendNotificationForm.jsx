@@ -8,9 +8,9 @@ import {
   Title,
   Container,
 } from "@mantine/core";
-import axios from "axios";
 import { DatePickerInput } from "@mantine/dates";
 import { notifications } from "@mantine/notifications";
+import axios from "../api";
 import { sendNotificationRoute } from "../../../routes/placementCellRoutes";
 
 function SendNotificationForm() {

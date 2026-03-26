@@ -13,7 +13,7 @@ import {
 } from "@mantine/core";
 import { MantineReactTable } from "mantine-react-table";
 import { notifications } from "@mantine/notifications";
-import axios from "axios";
+import axios from "../api";
 import { fetchFieldsSubmitformRoute } from "../../../routes/placementCellRoutes";
 
 function FieldsForm() {

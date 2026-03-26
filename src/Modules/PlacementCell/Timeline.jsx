@@ -8,9 +8,9 @@ import {
   ActionIcon,
 } from "@mantine/core";
 import { Check, X, Minus, ArrowLeft } from "@phosphor-icons/react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { fetchTimeLineRoute } from "../../../routes/placementCellRoutes";
+import axios from "./api";
+import { fetchTimeLineRoute } from "../../routes/placementCellRoutes";
 
 function ApplicationStatusTimeline() {
   const [statusData, setStatusData] = useState([]);

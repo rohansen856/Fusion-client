@@ -15,7 +15,7 @@ import {
 } from "@mantine/core";
 import { ArrowLeft, Check } from "@phosphor-icons/react";
 import { useNavigate, useLocation } from "react-router-dom";
-import ApplicationStatusTimeline from "./components/Timeline";
+import ApplicationStatusTimeline from "./Timeline";
 
 function JobApplicationForm() {
   const [submitted, setSubmitted] = useState(false);

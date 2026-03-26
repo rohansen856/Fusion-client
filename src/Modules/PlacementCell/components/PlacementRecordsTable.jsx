@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Title, Container, Button, Loader, Alert } from "@mantine/core";
-import axios from "axios";
 import { MantineReactTable } from "mantine-react-table";
 import { useSelector } from "react-redux";
 import { notifications } from "@mantine/notifications";
+import axios from "../api";
 import AddPlacementRecordForm from "./AddPlacementRecordForm";
 import {
   deletePlacementStatsRoute,

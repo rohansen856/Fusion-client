@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types, import/order */
 import React, { useState, useEffect } from "react";
 import {
   TextInput,
@@ -8,12 +9,13 @@ import {
   Card,
   Title,
   Grid,
+  // eslint-disable-next-line no-unused-vars
   ActionIcon,
   Chip,
   MultiSelect,
 } from "@mantine/core";
 import { DateTimePicker } from "@mantine/dates";
-import axios from "axios";
+import axios from "../api";
 import { notifications } from "@mantine/notifications";
 import {
   addPlacementEventForm,
@@ -21,6 +23,7 @@ import {
   fetchFieldsSubmitformRoute,
 } from "../../../routes/placementCellRoutes";
 
+// eslint-disable-next-line react/prop-types
 function AddPlacementEventForm({ onClose }) {
   const [company, setCompany] = useState("");
   const [date, setDate] = useState(null);
@@ -28,12 +31,15 @@ function AddPlacementEventForm({ onClose }) {
   const [location, setLocation] = useState("");
   const [ctc, setCtc] = useState("");
   const [time, setTime] = useState("");
+  // eslint-disable-next-line no-unused-vars
   const [endDateTime, setEndDateTime] = useState("");
   const [placementType, setPlacementType] = useState("");
   const [description, setDescription] = useState("");
   const [jobrole, setRole] = useState("");
   const [eligibility, setEligibility] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [datePickerOpened, setDatePickerOpened] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [endDatePickerOpened, setEndDatePickerOpened] = useState(false);
   const [passoutYear, setPassoutYear] = useState(-1);
   const [gender, setGender] = useState("All");

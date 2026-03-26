@@ -1,6 +1,6 @@
 import React from "react";
-import JobApplicationsTable from "./AppliedStudentDetails";
-import CreateNextRoundForm from "./CreateNextRoundForm";
+import JobApplicationsTable from "./components/AppliedStudentDetails";
+import CreateNextRoundForm from "./components/CreateNextRoundForm";
 
 function PlacementEventHandeling() {
   return (
