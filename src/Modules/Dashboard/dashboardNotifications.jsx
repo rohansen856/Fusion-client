@@ -5,6 +5,10 @@ import {
   Trash,
   Star,
   FunnelSimple,
+  CheckCircle,
+  XCircle,
+  Clock,
+  CalendarBlank,
 } from "@phosphor-icons/react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -23,6 +27,7 @@ import {
   Tooltip,
   SegmentedControl,
 } from "@mantine/core";
+import { notifications as mantineNotifications } from "@mantine/notifications";
 import { useDispatch } from "react-redux";
 import { setTotalNotifications } from "../../redux/userslice.jsx";
 import classes from "./Dashboard.module.css";
@@ -35,9 +40,182 @@ import {
   getNotificationsRoute,
 } from "../../routes/dashboardRoutes";
 import ModuleTabs from "../../components/moduleTabs.jsx";
+import {
+  loadMockNotifications,
+  patchMockNotification,
+  isMockNotification,
+  formatTimeLeft,
+} from "./mockDashboardNotifications";
 
 const sortCategories = ["Most Recent", "Tags", "Title"];
 const filterCategories = ["All", "Starred"];
+
+function OfferStatusBadge({ status }) {
+  switch (status) {
+    case "ACCEPTED":
+      return (
+        <Badge color="green" variant="filled" size="sm" leftSection={<CheckCircle size={12} />}>
+          Accepted
+        </Badge>
+      );
+    case "DECLINED":
+      return (
+        <Badge color="red" variant="filled" size="sm" leftSection={<XCircle size={12} />}>
+          Declined
+        </Badge>
+      );
+    case "AUTO_REJECTED":
+      return (
+        <Badge color="gray" variant="filled" size="sm" leftSection={<Clock size={12} />}>
+          Auto-rejected
+        </Badge>
+      );
+    default:
+      return (
+        <Badge color="yellow" variant="light" size="sm" leftSection={<Clock size={12} />}>
+          Awaiting response
+        </Badge>
+      );
+  }
+}
+
+OfferStatusBadge.propTypes = { status: PropTypes.string };
+
+function OfferExtras({ notification, respondToOffer }) {
+  const meta = notification.data?.meta ?? {};
+  const timeLeft = formatTimeLeft(notification.offerDeadline);
+  const isPending = notification.status === "PENDING";
+
+  return (
+    <Paper
+      withBorder
+      p="sm"
+      radius="sm"
+      mt="xs"
+      style={{ background: "#f9fafb" }}
+    >
+      <Group gap="lg" wrap="wrap" mb="xs">
+        {meta.company && (
+          <Text size="xs">
+            <b>Company:</b> {meta.company}
+          </Text>
+        )}
+        {meta.role && (
+          <Text size="xs">
+            <b>Role:</b> {meta.role}
+          </Text>
+        )}
+        {meta.ctc && (
+          <Text size="xs">
+            <b>CTC:</b> {meta.ctc}
+          </Text>
+        )}
+        {meta.location && (
+          <Text size="xs">
+            <b>Location:</b> {meta.location}
+          </Text>
+        )}
+      </Group>
+      <Group justify="space-between" wrap="wrap" gap="xs">
+        <Group gap="xs">
+          <OfferStatusBadge status={notification.status} />
+          {isPending && timeLeft && (
+            <Badge
+              color={timeLeft === "Expired" ? "gray" : "blue"}
+              variant="outline"
+              size="sm"
+              leftSection={<Clock size={12} />}
+            >
+              {timeLeft}
+            </Badge>
+          )}
+        </Group>
+        {isPending ? (
+          <Group gap="xs">
+            <Button
+              size="xs"
+              color="green"
+              leftSection={<CheckCircle size={14} />}
+              onClick={() => respondToOffer(notification.id, "ACCEPTED")}
+            >
+              Accept
+            </Button>
+            <Button
+              size="xs"
+              variant="outline"
+              color="red"
+              leftSection={<XCircle size={14} />}
+              onClick={() => respondToOffer(notification.id, "DECLINED")}
+            >
+              Decline
+            </Button>
+          </Group>
+        ) : null}
+      </Group>
+    </Paper>
+  );
+}
+
+OfferExtras.propTypes = {
+  notification: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+    offerDeadline: PropTypes.string,
+    status: PropTypes.string,
+    data: PropTypes.shape({ meta: PropTypes.object }),
+  }).isRequired,
+  respondToOffer: PropTypes.func.isRequired,
+};
+
+function InterviewExtras({ notification }) {
+  const meta = notification.data?.meta ?? {};
+  if (!Object.keys(meta).length) return null;
+  return (
+    <Paper
+      withBorder
+      p="sm"
+      radius="sm"
+      mt="xs"
+      style={{ background: "#f9fafb" }}
+    >
+      <Group gap="md" wrap="wrap">
+        {meta.company && (
+          <Group gap={4}>
+            <CalendarBlank size={14} />
+            <Text size="xs">
+              <b>{meta.company}</b>
+            </Text>
+          </Group>
+        )}
+        {meta.role && (
+          <Text size="xs">
+            <b>Role:</b> {meta.role}
+          </Text>
+        )}
+        {meta.round && (
+          <Text size="xs">
+            <b>Round:</b> {meta.round}
+          </Text>
+        )}
+        {meta.when && (
+          <Text size="xs">
+            <b>When:</b> {meta.when}
+          </Text>
+        )}
+        {meta.mode && (
+          <Text size="xs">
+            <b>Mode:</b> {meta.mode}
+          </Text>
+        )}
+      </Group>
+    </Paper>
+  );
+}
+
+InterviewExtras.propTypes = {
+  notification: PropTypes.shape({
+    data: PropTypes.shape({ meta: PropTypes.object }),
+  }).isRequired,
+};
 
 function NotificationItem({
   notification,
@@ -45,6 +223,7 @@ function NotificationItem({
   deleteNotification,
   markAsUnread,
   toggleStar,
+  respondToOffer,
   loading,
   starLoading,
 }) {
@@ -146,12 +325,22 @@ function NotificationItem({
               c={isUnread ? "#2c2e33" : "#9AA1A9"}
               size="0.9rem"
               mt="xs"
-              lineClamp={2}
+              lineClamp={notification.mock ? undefined : 2}
               fw={isUnread ? 500 : 400}
               style={{ marginBottom: "8px" }}
             >
               {notification.description || "No description available."}
             </Text>
+
+            {notification.kind === "interview" && (
+              <InterviewExtras notification={notification} />
+            )}
+            {notification.kind === "offer" && (
+              <OfferExtras
+                notification={notification}
+                respondToOffer={respondToOffer}
+              />
+            )}
           </Box>
 
           <Group
@@ -245,7 +434,23 @@ function Dashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       const token = localStorage.getItem("authToken");
-      if (!token) return console.error("No authentication token found!");
+
+      const mocks = loadMockNotifications();
+      const mockNotifications = mocks.filter(
+        (m) => m.data?.flag !== "announcement",
+      );
+      const mockAnnouncements = mocks.filter(
+        (m) => m.data?.flag === "announcement",
+      );
+
+      if (!token) {
+        console.warn(
+          "No authentication token found — showing mock notifications only.",
+        );
+        setNotificationsList(mockNotifications);
+        setAnnouncementsList(mockAnnouncements);
+        return;
+      }
 
       try {
         setLoading(true);
@@ -273,31 +478,56 @@ function Dashboard() {
           localStorage.getItem("starredNotifications") || "{}",
         );
 
-        setNotificationsList(
-          notificationsData
+        setNotificationsList([
+          ...mockNotifications,
+          ...notificationsData
             .filter((item) => item.data?.flag !== "announcement")
             .map((notification) => ({
               ...notification,
               starred: !!starredNotifications[notification.id],
             })),
-        );
+        ]);
 
-        setAnnouncementsList(
-          notificationsData
+        setAnnouncementsList([
+          ...mockAnnouncements,
+          ...notificationsData
             .filter((item) => item.data?.flag === "announcement")
             .map((notification) => ({
               ...notification,
               starred: !!starredNotifications[notification.id],
             })),
-        );
+        ]);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
+        // Even if the backend is unreachable, keep the demo entries visible.
+        setNotificationsList(mockNotifications);
+        setAnnouncementsList(mockAnnouncements);
       } finally {
         setLoading(false);
       }
     };
 
     fetchDashboardData();
+
+    // Keep countdowns fresh and auto-reject expired offers while the page is open.
+    const tick = setInterval(() => {
+      const refreshed = loadMockNotifications();
+      const mockNotifs = refreshed.filter(
+        (m) => m.data?.flag !== "announcement",
+      );
+      const mockAnns = refreshed.filter(
+        (m) => m.data?.flag === "announcement",
+      );
+      setNotificationsList((prev) => [
+        ...mockNotifs,
+        ...prev.filter((n) => !isMockNotification(n.id)),
+      ]);
+      setAnnouncementsList((prev) => [
+        ...mockAnns,
+        ...prev.filter((n) => !isMockNotification(n.id)),
+      ]);
+    }, 60 * 1000);
+    return () => clearInterval(tick);
   }, [dispatch]);
 
   const notificationsToDisplay =
@@ -324,6 +554,16 @@ function Dashboard() {
   }, [sortedBy, filterBy, notificationsToDisplay]);
 
   const markAsRead = async (notifId) => {
+    if (isMockNotification(notifId)) {
+      patchMockNotification(notifId, { unread: false });
+      setNotificationsList((prev) =>
+        prev.map((n) => (n.id === notifId ? { ...n, unread: false } : n)),
+      );
+      setAnnouncementsList((prev) =>
+        prev.map((n) => (n.id === notifId ? { ...n, unread: false } : n)),
+      );
+      return;
+    }
     const token = localStorage.getItem("authToken");
     try {
       setRead_Loading(notifId);
@@ -352,6 +592,16 @@ function Dashboard() {
   };
 
   const markAsUnread = async (notifId) => {
+    if (isMockNotification(notifId)) {
+      patchMockNotification(notifId, { unread: true });
+      setNotificationsList((prev) =>
+        prev.map((n) => (n.id === notifId ? { ...n, unread: true } : n)),
+      );
+      setAnnouncementsList((prev) =>
+        prev.map((n) => (n.id === notifId ? { ...n, unread: true } : n)),
+      );
+      return;
+    }
     const token = localStorage.getItem("authToken");
     try {
       setRead_Loading(notifId);
@@ -379,6 +629,31 @@ function Dashboard() {
     }
   };
 
+  const respondToOffer = (notifId, decision) => {
+    if (!isMockNotification(notifId)) return;
+    patchMockNotification(notifId, {
+      status: decision,
+      unread: false,
+    });
+    setNotificationsList((prev) =>
+      prev.map((n) =>
+        n.id === notifId ? { ...n, status: decision, unread: false } : n,
+      ),
+    );
+    try {
+      mantineNotifications.show({
+        title: decision === "ACCEPTED" ? "Offer accepted" : "Offer declined",
+        message:
+          decision === "ACCEPTED"
+            ? "We have recorded your acceptance. The placement cell will follow up with next steps."
+            : "You have declined this offer. It will no longer appear as pending.",
+        color: decision === "ACCEPTED" ? "green" : "red",
+      });
+    } catch {
+      /* mantine notifications provider may not be mounted in tests */
+    }
+  };
+
   const toggleStar = (notifId) => {
     try {
       setStar_Loading(notifId);
@@ -390,6 +665,10 @@ function Dashboard() {
       if (!notification) return;
 
       const isCurrentlyStarred = notification.starred;
+
+      if (isMockNotification(notifId)) {
+        patchMockNotification(notifId, { starred: !isCurrentlyStarred });
+      }
 
       const starredNotifications = JSON.parse(
         localStorage.getItem("starredNotifications") || "{}",
@@ -427,6 +706,12 @@ function Dashboard() {
   };
 
   const deleteNotification = async (notifId) => {
+    if (isMockNotification(notifId)) {
+      patchMockNotification(notifId, { deleted: true });
+      setNotificationsList((prev) => prev.filter((n) => n.id !== notifId));
+      setAnnouncementsList((prev) => prev.filter((n) => n.id !== notifId));
+      return;
+    }
     const token = localStorage.getItem("authToken");
 
     try {
@@ -539,6 +824,7 @@ function Dashboard() {
               markAsUnread={markAsUnread}
               deleteNotification={deleteNotification}
               toggleStar={toggleStar}
+              respondToOffer={respondToOffer}
               loading={read_Loading}
               starLoading={star_Loading}
             />
@@ -553,21 +839,28 @@ export default Dashboard;
 
 NotificationItem.propTypes = {
   notification: PropTypes.shape({
-    id: PropTypes.number.isRequired,
+    id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
     verb: PropTypes.string.isRequired,
     description: PropTypes.string,
     timestamp: PropTypes.string.isRequired,
     data: PropTypes.shape({
       module: PropTypes.string,
       flag: PropTypes.string,
+      meta: PropTypes.object,
     }),
     unread: PropTypes.bool.isRequired,
     starred: PropTypes.bool,
+    kind: PropTypes.string,
+    status: PropTypes.string,
+    offerDeadline: PropTypes.string,
+    mock: PropTypes.bool,
   }).isRequired,
   markAsRead: PropTypes.func.isRequired,
   markAsUnread: PropTypes.func.isRequired,
   deleteNotification: PropTypes.func.isRequired,
   toggleStar: PropTypes.func.isRequired,
-  loading: PropTypes.number.isRequired,
-  starLoading: PropTypes.number.isRequired,
+  respondToOffer: PropTypes.func.isRequired,
+  loading: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+  starLoading: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+    .isRequired,
 };

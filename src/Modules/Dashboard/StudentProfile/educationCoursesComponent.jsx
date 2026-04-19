@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import {
   Flex,
@@ -9,36 +9,92 @@ import {
   Textarea,
   Table,
   Divider,
+  ActionIcon,
+  Tooltip,
 } from "@mantine/core";
-import { notifications, Notifications } from "@mantine/notifications";
+import { notifications } from "@mantine/notifications";
+import { IconTrash } from "@tabler/icons-react";
 import axios from "axios";
-import { updateProfileDataRoute } from "../../../routes/dashboardRoutes";
+import {
+  updateProfileDataRoute,
+  deleteProfileDataRoute,
+} from "../../../routes/dashboardRoutes";
+
+function authHeaders() {
+  return { Authorization: `Token ${localStorage.getItem("authToken")}` };
+}
+
+function extractError(error, fallback) {
+  const data = error?.response?.data;
+  if (!data) return fallback;
+  if (typeof data === "string") return data;
+  if (data.detail) return data.detail;
+  if (data.error) return data.error;
+  const firstKey = Object.keys(data)[0];
+  if (firstKey) {
+    const val = data[firstKey];
+    if (Array.isArray(val)) return `${firstKey}: ${val[0]}`;
+    if (typeof val === "string") return `${firstKey}: ${val}`;
+  }
+  return fallback;
+}
+
+function todayIsoDate() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
 function EducationTab({ educationData }) {
+  const [rows, setRows] = useState(educationData || []);
+  const [deletingId, setDeletingId] = useState(null);
   const [formData, setFormData] = useState({
     degree: "",
     stream: "",
     institute: "",
     grade: "",
-    start_date: "",
-    end_date: "",
+    sdate: "",
+    edate: "",
   });
+
+  const today = todayIsoDate();
+
+  useEffect(() => {
+    setRows(educationData || []);
+  }, [educationData]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async () => {
+    if (formData.sdate && formData.sdate > today) {
+      notifications.show({
+        title: "Invalid start date",
+        message: "Start date can't be in the future.",
+        color: "red",
+      });
+      return;
+    }
+    if (formData.sdate && formData.edate && formData.edate < formData.sdate) {
+      notifications.show({
+        title: "Invalid end date",
+        message: "End date must be on or after the start date.",
+        color: "red",
+      });
+      return;
+    }
     try {
-      await axios.put(
+      const res = await axios.put(
         updateProfileDataRoute,
         { education: formData },
-        {
-          headers: {
-            Authorization: `Token ${localStorage.getItem("authToken")}`,
-          },
-        },
+        { headers: authHeaders() },
       );
+      if (res.data && res.data.id) {
+        setRows((prev) => [...prev, res.data]);
+      }
       notifications.show({
         message: "Education Added Successfully!",
         color: "green",
@@ -48,15 +104,37 @@ function EducationTab({ educationData }) {
         stream: "",
         institute: "",
         grade: "",
-        start_date: "",
-        end_date: "",
+        sdate: "",
+        edate: "",
       });
     } catch (error) {
       notifications.show({
-        message: "Failed! Please try later.",
+        message: extractError(error, "Failed! Please try later."),
         color: "red",
       });
-      console.error("Error updating education:", error);
+    }
+  };
+
+  const handleDelete = async (row) => {
+    if (!row?.id) return;
+    setDeletingId(row.id);
+    try {
+      await axios.delete(deleteProfileDataRoute(row.id), {
+        headers: authHeaders(),
+        data: { deleteedu: true },
+      });
+      setRows((prev) => prev.filter((r) => r.id !== row.id));
+      notifications.show({
+        message: "Education entry removed.",
+        color: "green",
+      });
+    } catch (error) {
+      notifications.show({
+        message: extractError(error, "Failed to remove education."),
+        color: "red",
+      });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -111,22 +189,28 @@ function EducationTab({ educationData }) {
         </Input.Wrapper>
       </Flex>
       <Flex align="center" justify="space-between" mb="md">
-        <Input.Wrapper label="Start Date" w="48%">
+        <Input.Wrapper
+          label="Start Date"
+          description="Cannot be in the future"
+          w="48%"
+        >
           <Input
-            name="start_date"
+            name="sdate"
             type="date"
-            value={formData.start_date}
+            value={formData.sdate}
             onChange={handleChange}
+            max={today}
             size="md"
             mt="xs"
           />
         </Input.Wrapper>
         <Input.Wrapper label="End Date" w="48%">
           <Input
-            name="end_date"
+            name="edate"
             type="date"
-            value={formData.end_date}
+            value={formData.edate}
             onChange={handleChange}
+            min={formData.sdate || undefined}
             size="md"
             mt="xs"
           />
@@ -139,7 +223,7 @@ function EducationTab({ educationData }) {
       <Text fw={500} mb="md">
         Your Educations
       </Text>
-      {educationData.length > 0 ? (
+      {rows.length > 0 ? (
         <Table striped highlightOnHover withTableBorder withColumnBorders>
           <Table.Thead>
             <Table.Tr>
@@ -149,11 +233,12 @@ function EducationTab({ educationData }) {
               <Table.Th>Grade</Table.Th>
               <Table.Th visibleFrom="sm">Start Date</Table.Th>
               <Table.Th visibleFrom="sm">End Date</Table.Th>
+              <Table.Th style={{ width: 70 }}>Action</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {educationData.map((edu, index) => (
-              <Table.Tr key={index}>
+            {rows.map((edu, index) => (
+              <Table.Tr key={edu.id ?? index}>
                 <Table.Td style={{ textAlign: "center" }}>
                   {edu.degree}
                 </Table.Td>
@@ -170,6 +255,20 @@ function EducationTab({ educationData }) {
                 <Table.Td style={{ textAlign: "center" }} visibleFrom="sm">
                   {edu.edate}
                 </Table.Td>
+                <Table.Td style={{ textAlign: "center" }}>
+                  <Tooltip label="Remove" withArrow>
+                    <ActionIcon
+                      color="red"
+                      variant="subtle"
+                      disabled={!edu.id}
+                      loading={deletingId === edu.id}
+                      onClick={() => handleDelete(edu)}
+                      aria-label="Remove education"
+                    >
+                      <IconTrash size={18} />
+                    </ActionIcon>
+                  </Tooltip>
+                </Table.Td>
               </Table.Tr>
             ))}
           </Table.Tbody>
@@ -184,13 +283,19 @@ function EducationTab({ educationData }) {
 }
 
 function CoursesTab({ coursesData }) {
+  const [rows, setRows] = useState(coursesData || []);
+  const [deletingId, setDeletingId] = useState(null);
   const [formData, setFormData] = useState({
     course_name: "",
-    license: "",
-    start_date: "",
-    end_date: "",
+    license_no: "",
+    sdate: "",
+    edate: "",
     description: "",
   });
+
+  useEffect(() => {
+    setRows(coursesData || []);
+  }, [coursesData]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -198,32 +303,53 @@ function CoursesTab({ coursesData }) {
 
   const handleSubmit = async () => {
     try {
-      await axios.put(
+      const res = await axios.put(
         updateProfileDataRoute,
         { coursesubmit: formData },
-        {
-          headers: {
-            Authorization: `Token ${localStorage.getItem("authToken")}`,
-          },
-        },
+        { headers: authHeaders() },
       );
-      Notifications.show({
-        message: "Certificates added Successfully!",
+      if (res.data && res.data.id) {
+        setRows((prev) => [...prev, res.data]);
+      }
+      notifications.show({
+        message: "Certificate added successfully!",
         color: "green",
       });
       setFormData({
         course_name: "",
-        license: "",
-        start_date: "",
-        end_date: "",
+        license_no: "",
+        sdate: "",
+        edate: "",
         description: "",
       });
     } catch (error) {
-      Notifications.show({
-        message: "Failed! Please try later.",
+      notifications.show({
+        message: extractError(error, "Failed! Please try later."),
         color: "red",
       });
-      console.error("Error updating courses:", error);
+    }
+  };
+
+  const handleDelete = async (row) => {
+    if (!row?.id) return;
+    setDeletingId(row.id);
+    try {
+      await axios.delete(deleteProfileDataRoute(row.id), {
+        headers: authHeaders(),
+        data: { deletecourse: true },
+      });
+      setRows((prev) => prev.filter((r) => r.id !== row.id));
+      notifications.show({
+        message: "Certificate removed.",
+        color: "green",
+      });
+    } catch (error) {
+      notifications.show({
+        message: extractError(error, "Failed to remove certificate."),
+        color: "red",
+      });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -249,8 +375,8 @@ function CoursesTab({ coursesData }) {
         </Input.Wrapper>
         <Input.Wrapper label="License No." w="30%">
           <Input
-            name="license"
-            value={formData.license}
+            name="license_no"
+            value={formData.license_no}
             onChange={handleChange}
             size="md"
             mt="xs"
@@ -260,9 +386,9 @@ function CoursesTab({ coursesData }) {
       <Flex align="center" justify="space-between" mb="md">
         <Input.Wrapper label="Start Date" w="48%">
           <Input
-            name="start_date"
+            name="sdate"
             type="date"
-            value={formData.start_date}
+            value={formData.sdate}
             onChange={handleChange}
             size="md"
             mt="xs"
@@ -270,9 +396,9 @@ function CoursesTab({ coursesData }) {
         </Input.Wrapper>
         <Input.Wrapper label="End Date" w="48%">
           <Input
-            name="end_date"
+            name="edate"
             type="date"
-            value={formData.end_date}
+            value={formData.edate}
             onChange={handleChange}
             size="md"
             mt="xs"
@@ -297,26 +423,49 @@ function CoursesTab({ coursesData }) {
       <Text fw={500} mb="md">
         Your Certificates
       </Text>
-      {coursesData.length > 0 ? (
+      {rows.length > 0 ? (
         <Table striped highlightOnHover withTableBorder withColumnBorders>
           <Table.Thead>
             <Table.Tr>
-              <Table.Td>Course Name</Table.Td>
-              <Table.Td>License No.</Table.Td>
-              <Table.Td>Start Date</Table.Td>
-              <Table.Td>Completion Date</Table.Td>
+              <Table.Th>Course Name</Table.Th>
+              <Table.Th>License No.</Table.Th>
+              <Table.Th>Start Date</Table.Th>
+              <Table.Th>Completion Date</Table.Th>
+              <Table.Th style={{ width: 70 }}>Action</Table.Th>
             </Table.Tr>
           </Table.Thead>
-          <tbody>
-            {coursesData.map((course, index) => (
-              <tr key={index}>
-                <td style={{ textAlign: "center" }}>{course.course_name}</td>
-                <td style={{ textAlign: "center" }}>{course.license_no}</td>
-                <td style={{ textAlign: "center" }}>{course.sdate}</td>
-                <td style={{ textAlign: "center" }}>{course.edate}</td>
-              </tr>
+          <Table.Tbody>
+            {rows.map((course, index) => (
+              <Table.Tr key={course.id ?? index}>
+                <Table.Td style={{ textAlign: "center" }}>
+                  {course.course_name}
+                </Table.Td>
+                <Table.Td style={{ textAlign: "center" }}>
+                  {course.license_no}
+                </Table.Td>
+                <Table.Td style={{ textAlign: "center" }}>
+                  {course.sdate}
+                </Table.Td>
+                <Table.Td style={{ textAlign: "center" }}>
+                  {course.edate}
+                </Table.Td>
+                <Table.Td style={{ textAlign: "center" }}>
+                  <Tooltip label="Remove" withArrow>
+                    <ActionIcon
+                      color="red"
+                      variant="subtle"
+                      disabled={!course.id}
+                      loading={deletingId === course.id}
+                      onClick={() => handleDelete(course)}
+                      aria-label="Remove certificate"
+                    >
+                      <IconTrash size={18} />
+                    </ActionIcon>
+                  </Tooltip>
+                </Table.Td>
+              </Table.Tr>
             ))}
-          </tbody>
+          </Table.Tbody>
         </Table>
       ) : (
         <Text mt="lg" style={{ textAlign: "center" }}>
@@ -362,49 +511,34 @@ export default function EducationCoursesComponent({ education, courses }) {
   );
 }
 
+const eduShape = PropTypes.shape({
+  id: PropTypes.number,
+  degree: PropTypes.string,
+  stream: PropTypes.string,
+  institute: PropTypes.string,
+  grade: PropTypes.string,
+  sdate: PropTypes.string,
+  edate: PropTypes.string,
+});
+
+const courseShape = PropTypes.shape({
+  id: PropTypes.number,
+  course_name: PropTypes.string,
+  license_no: PropTypes.string,
+  sdate: PropTypes.string,
+  edate: PropTypes.string,
+  description: PropTypes.string,
+});
+
 EducationCoursesComponent.propTypes = {
-  education: PropTypes.arrayOf(
-    PropTypes.shape({
-      degree: PropTypes.string,
-      stream: PropTypes.string,
-      institute: PropTypes.string,
-      grade: PropTypes.string,
-      start_date: PropTypes.string,
-      end_date: PropTypes.string,
-    }),
-  ),
-  courses: PropTypes.arrayOf(
-    PropTypes.shape({
-      course_name: PropTypes.string,
-      license: PropTypes.string,
-      start_date: PropTypes.string,
-      end_date: PropTypes.string,
-      description: PropTypes.string,
-    }),
-  ),
+  education: PropTypes.arrayOf(eduShape),
+  courses: PropTypes.arrayOf(courseShape),
 };
 
 EducationTab.propTypes = {
-  educationData: PropTypes.arrayOf(
-    PropTypes.shape({
-      degree: PropTypes.string,
-      stream: PropTypes.string,
-      institute: PropTypes.string,
-      grade: PropTypes.string,
-      start_date: PropTypes.string,
-      end_date: PropTypes.string,
-    }),
-  ),
+  educationData: PropTypes.arrayOf(eduShape),
 };
 
 CoursesTab.propTypes = {
-  coursesData: PropTypes.arrayOf(
-    PropTypes.shape({
-      course_name: PropTypes.string,
-      license: PropTypes.string,
-      start_date: PropTypes.string,
-      end_date: PropTypes.string,
-      description: PropTypes.string,
-    }),
-  ),
+  coursesData: PropTypes.arrayOf(courseShape),
 };

@@ -201,7 +201,7 @@ export default function App() {
           }
         />
         <Route
-          path="/placement-cell"
+          path="/placement-cell/*"
           element={
             <Layout>
               <Suspense fallback={<div>Loading .... </div>}>

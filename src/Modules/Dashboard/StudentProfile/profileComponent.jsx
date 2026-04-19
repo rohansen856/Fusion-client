@@ -5,6 +5,44 @@ import { notifications } from "@mantine/notifications";
 import axios from "axios";
 import { updateProfileDataRoute } from "../../../routes/dashboardRoutes";
 
+// Keep in sync with backend `applications.placement_cell.validators`.
+const PHONE_REGEX = /^[6-9]\d{9}$/;
+const normalizePhone = (raw) => {
+  if (!raw) return "";
+  let cleaned = String(raw).replace(/[\s\-()]/g, "");
+  if (cleaned.startsWith("+91")) cleaned = cleaned.slice(3);
+  else if (cleaned.startsWith("91") && cleaned.length === 12) cleaned = cleaned.slice(2);
+  else if (cleaned.startsWith("0") && cleaned.length === 11) cleaned = cleaned.slice(1);
+  return cleaned;
+};
+const validatePhone = (raw) => {
+  const cleaned = normalizePhone(raw);
+  if (!cleaned) return "Phone number is required.";
+  if (!/^\d+$/.test(cleaned)) return "Only digits (optional +91) are allowed.";
+  if (cleaned.length !== 10)
+    return `Phone number must be exactly 10 digits (got ${cleaned.length}).`;
+  if (!PHONE_REGEX.test(cleaned))
+    return "Phone number must start with 6, 7, 8 or 9.";
+  return null;
+};
+const validateDob = (value) => {
+  if (!value) return null;
+  const m = String(value).match(/^\d{4}-\d{2}-\d{2}$/);
+  if (!m) return "Date of birth must be in YYYY-MM-DD format.";
+  const dob = new Date(value);
+  if (Number.isNaN(dob.getTime())) return "Invalid date.";
+  const today = new Date();
+  if (dob > today) return "Date of birth cannot be in the future.";
+  const age = (today - dob) / (365.25 * 24 * 60 * 60 * 1000);
+  if (age < 10) return "User must be at least 10 years old.";
+  if (age > 100) return "Age cannot exceed 100 years.";
+  return null;
+};
+const validateAbout = (v) =>
+  v && v.length > 1000 ? "About me must be 1000 characters or fewer." : null;
+const validateAddress = (v) =>
+  v && v.length > 500 ? "Address must be 500 characters or fewer." : null;
+
 function ProfileComponent({ data, isEditable }) {
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState({
@@ -14,18 +52,39 @@ function ProfileComponent({ data, isEditable }) {
     contactNumber: data.profile?.phone_no || "+91 99999 99999",
     mailId: data.current[0]?.user.email || "abc@gmail.com",
   });
+  const [errors, setErrors] = useState({});
+
+  const runAllValidations = (d) => ({
+    contactNumber: validatePhone(d.contactNumber),
+    dob: validateDob(d.dob),
+    about: validateAbout(d.about),
+    address: validateAddress(d.address),
+  });
 
   const handleEditClick = async () => {
     const token = localStorage.getItem("authToken");
     if (!token) return console.error("No authentication token found!");
     if (isEditing) {
+      const errs = runAllValidations(profileData);
+      const hasError = Object.values(errs).some(Boolean);
+      setErrors(errs);
+      if (hasError) {
+        notifications.show({
+          title: "Validation error",
+          message:
+            Object.values(errs).find(Boolean) || "Please fix the highlighted fields.",
+          color: "red",
+        });
+        return;
+      }
+
       try {
         const payload = {
           profilesubmit: {
             about_me: profileData.about,
             date_of_birth: profileData.dob,
             address: profileData.address,
-            phone_no: profileData.contactNumber,
+            phone_no: normalizePhone(profileData.contactNumber),
           },
         };
 
@@ -36,26 +95,45 @@ function ProfileComponent({ data, isEditable }) {
         if (response.status === 200) {
           notifications.show({
             message: "Profile updated successfully!",
-            type: "success",
+            color: "green",
           });
+          setErrors({});
         } else {
           notifications.show({
             message: "Failed to update profile",
-            type: "error",
+            color: "red",
           });
+          return;
         }
       } catch (error) {
-        notifications.show({
-          message: "Error updating profile",
-          type: "error",
-        });
+        const backendErrs = error?.response?.data || {};
+        const firstMsg =
+          (Array.isArray(backendErrs.phone_no) && backendErrs.phone_no[0]) ||
+          (Array.isArray(backendErrs.date_of_birth) && backendErrs.date_of_birth[0]) ||
+          backendErrs.detail ||
+          "Error updating profile";
+        notifications.show({ message: firstMsg, color: "red" });
+        if (backendErrs.phone_no)
+          setErrors((e) => ({ ...e, contactNumber: backendErrs.phone_no[0] }));
+        if (backendErrs.date_of_birth)
+          setErrors((e) => ({ ...e, dob: backendErrs.date_of_birth[0] }));
+        return;
       }
     }
     setIsEditing(!isEditing);
   };
 
   const handleChange = (field, value) => {
-    setProfileData((prev) => ({ ...prev, [field]: value }));
+    setProfileData((prev) => {
+      const next = { ...prev, [field]: value };
+      let fieldError = null;
+      if (field === "contactNumber") fieldError = validatePhone(value);
+      else if (field === "dob") fieldError = validateDob(value);
+      else if (field === "about") fieldError = validateAbout(value);
+      else if (field === "address") fieldError = validateAddress(value);
+      setErrors((e) => ({ ...e, [field]: fieldError }));
+      return next;
+    });
   };
 
   return (
@@ -83,7 +161,9 @@ function ProfileComponent({ data, isEditable }) {
             <TextInput
               value={profileData.about}
               onChange={(e) => handleChange("about", e.target.value)}
+              error={errors.about}
               w="80%"
+              maxLength={1000}
             />
           ) : (
             <Text>{profileData.about}</Text>
@@ -117,8 +197,11 @@ function ProfileComponent({ data, isEditable }) {
               <Table.Td>
                 {isEditing ? (
                   <TextInput
+                    type="date"
                     value={profileData.dob}
                     onChange={(e) => handleChange("dob", e.target.value)}
+                    error={errors.dob}
+                    placeholder="YYYY-MM-DD"
                   />
                 ) : (
                   profileData.dob
@@ -132,6 +215,8 @@ function ProfileComponent({ data, isEditable }) {
                   <TextInput
                     value={profileData.address}
                     onChange={(e) => handleChange("address", e.target.value)}
+                    error={errors.address}
+                    maxLength={500}
                   />
                 ) : (
                   profileData.address
@@ -164,6 +249,10 @@ function ProfileComponent({ data, isEditable }) {
                     onChange={(e) =>
                       handleChange("contactNumber", e.target.value)
                     }
+                    error={errors.contactNumber}
+                    placeholder="10-digit mobile (starting 6-9, optional +91)"
+                    maxLength={16}
+                    inputMode="tel"
                   />
                 ) : (
                   profileData.contactNumber

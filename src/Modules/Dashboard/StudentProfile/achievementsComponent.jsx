@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import {
   Flex,
@@ -9,19 +9,50 @@ import {
   Select,
   Textarea,
   Table,
+  ActionIcon,
+  Tooltip,
 } from "@mantine/core";
 import axios from "axios";
 import { notifications } from "@mantine/notifications";
-import { updateProfileDataRoute } from "../../../routes/dashboardRoutes";
+import { IconTrash } from "@tabler/icons-react";
+import {
+  updateProfileDataRoute,
+  deleteProfileDataRoute,
+} from "../../../routes/dashboardRoutes";
+
+function authHeaders() {
+  return { Authorization: `Token ${localStorage.getItem("authToken")}` };
+}
+
+function extractError(error, fallback) {
+  const data = error?.response?.data;
+  if (!data) return fallback;
+  if (typeof data === "string") return data;
+  if (data.detail) return data.detail;
+  if (data.error) return data.error;
+  const firstKey = Object.keys(data)[0];
+  if (firstKey) {
+    const val = data[firstKey];
+    if (Array.isArray(val)) return `${firstKey}: ${val[0]}`;
+    if (typeof val === "string") return `${firstKey}: ${val}`;
+  }
+  return fallback;
+}
 
 function AchievementsComponent({ achievements }) {
+  const [rows, setRows] = useState(achievements || []);
+  const [deletingId, setDeletingId] = useState(null);
   const [achievement, setAchievement] = useState({
-    skill: "",
-    type: "Educational",
-    date: "",
+    achievement: "",
+    achievement_type: "EDUCATIONAL",
+    date_earned: "",
     issuer: "",
     description: "",
   });
+
+  useEffect(() => {
+    setRows(achievements || []);
+  }, [achievements]);
 
   const handleChange = (field, value) => {
     setAchievement((prev) => ({ ...prev, [field]: value }));
@@ -29,35 +60,55 @@ function AchievementsComponent({ achievements }) {
 
   const handleSubmit = async () => {
     try {
-      const response = await axios.put(
+      const res = await axios.put(
         updateProfileDataRoute,
-        {
-          achievementsubmit: {
-            skill: achievement.skill,
-            type: achievement.type,
-            date: achievement.date,
-            issuer: achievement.issuer,
-            description: achievement.description,
-          },
-        },
-        {
-          headers: {
-            Authorization: `Token ${localStorage.getItem("authToken")}`,
-          },
-        },
+        { achievementsubmit: achievement },
+        { headers: authHeaders() },
       );
-      console.log(response);
-
+      if (res.data && res.data.id) {
+        setRows((prev) => [...prev, res.data]);
+      }
       notifications.show({
         message: "Achievement added successfully!",
         color: "green",
       });
+      setAchievement({
+        achievement: "",
+        achievement_type: "EDUCATIONAL",
+        date_earned: "",
+        issuer: "",
+        description: "",
+      });
     } catch (error) {
-      alert("Error adding achievement");
+      notifications.show({
+        message: extractError(error, "Failed to add achievement."),
+        color: "red",
+      });
     }
   };
 
-  console.log(achievements);
+  const handleDelete = async (row) => {
+    if (!row?.id) return;
+    setDeletingId(row.id);
+    try {
+      await axios.delete(deleteProfileDataRoute(row.id), {
+        headers: authHeaders(),
+        data: { deleteach: true },
+      });
+      setRows((prev) => prev.filter((r) => r.id !== row.id));
+      notifications.show({
+        message: "Achievement removed.",
+        color: "green",
+      });
+    } catch (error) {
+      notifications.show({
+        message: extractError(error, "Failed to remove achievement."),
+        color: "red",
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <Flex
@@ -87,17 +138,20 @@ function AchievementsComponent({ achievements }) {
               <Input
                 size="md"
                 mt="xs"
-                value={achievement.skill}
-                onChange={(e) => handleChange("skill", e.target.value)}
+                value={achievement.achievement}
+                onChange={(e) => handleChange("achievement", e.target.value)}
               />
             </Input.Wrapper>
             <Input.Wrapper label="Type" w="30%">
               <Select
                 size="md"
                 mt="xs"
-                data={["Educational", "Other"]}
-                value={achievement.type}
-                onChange={(value) => handleChange("type", value)}
+                data={[
+                  { value: "EDUCATIONAL", label: "Educational" },
+                  { value: "OTHER", label: "Other" },
+                ]}
+                value={achievement.achievement_type}
+                onChange={(value) => handleChange("achievement_type", value)}
               />
             </Input.Wrapper>
           </Flex>
@@ -107,8 +161,8 @@ function AchievementsComponent({ achievements }) {
                 type="date"
                 size="md"
                 mt="xs"
-                value={achievement.date}
-                onChange={(e) => handleChange("date", e.target.value)}
+                value={achievement.date_earned}
+                onChange={(e) => handleChange("date_earned", e.target.value)}
               />
             </Input.Wrapper>
             <Input.Wrapper label="Issuer" w={{ base: "50%", sm: "65%" }}>
@@ -153,19 +207,26 @@ function AchievementsComponent({ achievements }) {
           Your Achievements
         </Text>
         <Divider my="md" />
-        {achievements.length > 0 ? (
+        {rows.length > 0 ? (
           <Table striped highlightOnHover withTableBorder withColumnBorders>
             <Table.Thead>
               <Table.Tr>
+                <Table.Th style={{ textAlign: "center" }}>Name</Table.Th>
                 <Table.Th style={{ textAlign: "center" }}>Type</Table.Th>
                 <Table.Th style={{ textAlign: "center" }}>Date</Table.Th>
                 <Table.Th style={{ textAlign: "center" }}>Issuer</Table.Th>
                 <Table.Th style={{ textAlign: "center" }}>Description</Table.Th>
+                <Table.Th style={{ textAlign: "center", width: 70 }}>
+                  Action
+                </Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {achievements.map((ach, index) => (
-                <Table.Tr key={index}>
+              {rows.map((ach, index) => (
+                <Table.Tr key={ach.id ?? index}>
+                  <Table.Td style={{ textAlign: "center" }}>
+                    {ach.achievement}
+                  </Table.Td>
                   <Table.Td style={{ textAlign: "center" }}>
                     {ach.achievement_type}
                   </Table.Td>
@@ -177,6 +238,20 @@ function AchievementsComponent({ achievements }) {
                   </Table.Td>
                   <Table.Td style={{ textAlign: "center" }}>
                     {ach.description}
+                  </Table.Td>
+                  <Table.Td style={{ textAlign: "center" }}>
+                    <Tooltip label="Remove" withArrow>
+                      <ActionIcon
+                        color="red"
+                        variant="subtle"
+                        disabled={!ach.id}
+                        loading={deletingId === ach.id}
+                        onClick={() => handleDelete(ach)}
+                        aria-label="Remove achievement"
+                      >
+                        <IconTrash size={18} />
+                      </ActionIcon>
+                    </Tooltip>
                   </Table.Td>
                 </Table.Tr>
               ))}
@@ -193,9 +268,10 @@ function AchievementsComponent({ achievements }) {
 AchievementsComponent.propTypes = {
   achievements: PropTypes.arrayOf(
     PropTypes.shape({
-      skill: PropTypes.string,
-      type: PropTypes.string,
-      date: PropTypes.string,
+      id: PropTypes.number,
+      achievement: PropTypes.string,
+      achievement_type: PropTypes.string,
+      date_earned: PropTypes.string,
       issuer: PropTypes.string,
       description: PropTypes.string,
     }),

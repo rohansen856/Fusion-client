@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import {
   Flex,
@@ -10,21 +10,52 @@ import {
   Table,
   Textarea,
   Divider,
+  ActionIcon,
+  Tooltip,
 } from "@mantine/core";
 import axios from "axios";
 import { notifications } from "@mantine/notifications";
-import { updateProfileDataRoute } from "../../../routes/dashboardRoutes";
+import { IconTrash } from "@tabler/icons-react";
+import {
+  updateProfileDataRoute,
+  deleteProfileDataRoute,
+} from "../../../routes/dashboardRoutes";
+
+function authHeaders() {
+  return { Authorization: `Token ${localStorage.getItem("authToken")}` };
+}
+
+function extractError(error, fallback) {
+  const data = error?.response?.data;
+  if (!data) return fallback;
+  if (typeof data === "string") return data;
+  if (data.detail) return data.detail;
+  if (data.error) return data.error;
+  const firstKey = Object.keys(data)[0];
+  if (firstKey) {
+    const val = data[firstKey];
+    if (Array.isArray(val)) return `${firstKey}: ${val[0]}`;
+    if (typeof val === "string") return `${firstKey}: ${val}`;
+  }
+  return fallback;
+}
 
 function InternshipsTab({ internshipsData }) {
+  const [rows, setRows] = useState(internshipsData || []);
+  const [deletingId, setDeletingId] = useState(null);
   const [formData, setFormData] = useState({
-    organization: "",
+    company: "",
     location: "",
-    job_title: "",
+    title: "",
     status: "ONGOING",
-    start_date: "",
-    end_date: "",
+    sdate: "",
+    edate: "",
     description: "",
   });
+
+  useEffect(() => {
+    setRows(internshipsData || []);
+  }, [internshipsData]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -32,34 +63,55 @@ function InternshipsTab({ internshipsData }) {
 
   const handleSubmit = async () => {
     try {
-      await axios.put(
+      const res = await axios.put(
         updateProfileDataRoute,
         { experiencesubmit: formData },
-        {
-          headers: {
-            Authorization: `Token ${localStorage.getItem("authToken")}`,
-          },
-        },
+        { headers: authHeaders() },
       );
+      if (res.data && res.data.id) {
+        setRows((prev) => [...prev, res.data]);
+      }
       notifications.show({
         message: "Internship Added Successfully!",
         color: "green",
       });
       setFormData({
-        organization: "",
+        company: "",
         location: "",
-        job_title: "",
+        title: "",
         status: "ONGOING",
-        start_date: "",
-        end_date: "",
+        sdate: "",
+        edate: "",
         description: "",
       });
     } catch (error) {
       notifications.show({
-        message: "Failed! Please try later.",
+        message: extractError(error, "Failed! Please try later."),
         color: "red",
       });
-      console.error("Error updating internships:", error);
+    }
+  };
+
+  const handleDelete = async (row) => {
+    if (!row?.id) return;
+    setDeletingId(row.id);
+    try {
+      await axios.delete(deleteProfileDataRoute(row.id), {
+        headers: authHeaders(),
+        data: { deleteexp: true },
+      });
+      setRows((prev) => prev.filter((r) => r.id !== row.id));
+      notifications.show({
+        message: "Internship removed.",
+        color: "green",
+      });
+    } catch (error) {
+      notifications.show({
+        message: extractError(error, "Failed to remove internship."),
+        color: "red",
+      });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -76,8 +128,8 @@ function InternshipsTab({ internshipsData }) {
       <Flex align="center" justify="space-between" mb="md">
         <Input.Wrapper label="Organization Name" w="65%">
           <Input
-            name="organization"
-            value={formData.organization}
+            name="company"
+            value={formData.company}
             onChange={handleChange}
             size="md"
             mt="xs"
@@ -96,8 +148,8 @@ function InternshipsTab({ internshipsData }) {
       <Flex align="center" justify="space-between" mb="md">
         <Input.Wrapper label="Job Profile Title" w="65%">
           <Input
-            name="job_title"
-            value={formData.job_title}
+            name="title"
+            value={formData.title}
             onChange={handleChange}
             size="md"
             mt="xs"
@@ -117,9 +169,9 @@ function InternshipsTab({ internshipsData }) {
       <Flex align="center" justify="space-between" mb="md">
         <Input.Wrapper label="Start Date" w="48%">
           <Input
-            name="start_date"
+            name="sdate"
             type="date"
-            value={formData.start_date}
+            value={formData.sdate}
             onChange={handleChange}
             size="md"
             mt="xs"
@@ -127,9 +179,9 @@ function InternshipsTab({ internshipsData }) {
         </Input.Wrapper>
         <Input.Wrapper label="End Date" w="48%">
           <Input
-            name="end_date"
+            name="edate"
             type="date"
-            value={formData.end_date}
+            value={formData.edate}
             onChange={handleChange}
             size="md"
             mt="xs"
@@ -155,7 +207,7 @@ function InternshipsTab({ internshipsData }) {
         Your Experience
       </Text>
 
-      {internshipsData.length > 0 ? (
+      {rows.length > 0 ? (
         <Table striped highlightOnHover withTableBorder withColumnBorders>
           <Table.Thead>
             <Table.Tr>
@@ -165,19 +217,20 @@ function InternshipsTab({ internshipsData }) {
               <Table.Th>Status</Table.Th>
               <Table.Th>Start Date</Table.Th>
               <Table.Th>End Date</Table.Th>
+              <Table.Th style={{ width: 70 }}>Action</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {internshipsData.map((internship, index) => (
-              <Table.Tr key={index}>
+            {rows.map((internship, index) => (
+              <Table.Tr key={internship.id ?? index}>
                 <Table.Td style={{ textAlign: "center" }}>
-                  {internship.organization}
+                  {internship.company}
                 </Table.Td>
                 <Table.Td style={{ textAlign: "center" }}>
                   {internship.location}
                 </Table.Td>
                 <Table.Td style={{ textAlign: "center" }}>
-                  {internship.job_title}
+                  {internship.title}
                 </Table.Td>
                 <Table.Td style={{ textAlign: "center" }}>
                   {internship.status}
@@ -187,6 +240,20 @@ function InternshipsTab({ internshipsData }) {
                 </Table.Td>
                 <Table.Td style={{ textAlign: "center" }}>
                   {internship.edate}
+                </Table.Td>
+                <Table.Td style={{ textAlign: "center" }}>
+                  <Tooltip label="Remove" withArrow>
+                    <ActionIcon
+                      color="red"
+                      variant="subtle"
+                      disabled={!internship.id}
+                      loading={deletingId === internship.id}
+                      onClick={() => handleDelete(internship)}
+                      aria-label="Remove internship"
+                    >
+                      <IconTrash size={18} />
+                    </ActionIcon>
+                  </Tooltip>
                 </Table.Td>
               </Table.Tr>
             ))}
@@ -202,14 +269,20 @@ function InternshipsTab({ internshipsData }) {
 }
 
 function ProjectsTab({ projectsData }) {
+  const [rows, setRows] = useState(projectsData || []);
+  const [deletingId, setDeletingId] = useState(null);
   const [formData, setFormData] = useState({
     project_name: "",
-    status: "ONGOING",
+    project_status: "ONGOING",
     project_link: "",
-    start_date: "",
-    end_date: "",
-    description: "",
+    sdate: "",
+    edate: "",
+    summary: "",
   });
+
+  useEffect(() => {
+    setRows(projectsData || []);
+  }, [projectsData]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -217,33 +290,54 @@ function ProjectsTab({ projectsData }) {
 
   const handleSubmit = async () => {
     try {
-      await axios.put(
+      const res = await axios.put(
         updateProfileDataRoute,
         { projectsubmit: formData },
-        {
-          headers: {
-            Authorization: `Token ${localStorage.getItem("authToken")}`,
-          },
-        },
+        { headers: authHeaders() },
       );
+      if (res.data && res.data.id) {
+        setRows((prev) => [...prev, res.data]);
+      }
       notifications.show({
         message: "Project Added Successfully!",
         color: "green",
       });
       setFormData({
         project_name: "",
-        status: "ONGOING",
+        project_status: "ONGOING",
         project_link: "",
-        start_date: "",
-        end_date: "",
-        description: "",
+        sdate: "",
+        edate: "",
+        summary: "",
       });
     } catch (error) {
       notifications.show({
-        message: "Failed! Please try later.",
+        message: extractError(error, "Failed! Please try later."),
         color: "red",
       });
-      console.error("Error updating projects:", error);
+    }
+  };
+
+  const handleDelete = async (row) => {
+    if (!row?.id) return;
+    setDeletingId(row.id);
+    try {
+      await axios.delete(deleteProfileDataRoute(row.id), {
+        headers: authHeaders(),
+        data: { deletepro: true },
+      });
+      setRows((prev) => prev.filter((r) => r.id !== row.id));
+      notifications.show({
+        message: "Project removed.",
+        color: "green",
+      });
+    } catch (error) {
+      notifications.show({
+        message: extractError(error, "Failed to remove project."),
+        color: "red",
+      });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -269,10 +363,12 @@ function ProjectsTab({ projectsData }) {
         </Input.Wrapper>
         <Input.Wrapper label="Status" w="30%">
           <Select
-            name="status"
+            name="project_status"
             data={["ONGOING", "COMPLETED"]}
-            value={formData.status}
-            onChange={(value) => setFormData({ ...formData, status: value })}
+            value={formData.project_status}
+            onChange={(value) =>
+              setFormData({ ...formData, project_status: value })
+            }
             size="md"
             mt="xs"
           />
@@ -290,9 +386,9 @@ function ProjectsTab({ projectsData }) {
       <Flex align="center" justify="space-between" mb="md">
         <Input.Wrapper label="Start Date" w="48%">
           <Input
-            name="start_date"
+            name="sdate"
             type="date"
-            value={formData.start_date}
+            value={formData.sdate}
             onChange={handleChange}
             size="md"
             mt="xs"
@@ -300,9 +396,9 @@ function ProjectsTab({ projectsData }) {
         </Input.Wrapper>
         <Input.Wrapper label="End Date" w="48%">
           <Input
-            name="end_date"
+            name="edate"
             type="date"
-            value={formData.end_date}
+            value={formData.edate}
             onChange={handleChange}
             size="md"
             mt="xs"
@@ -311,8 +407,8 @@ function ProjectsTab({ projectsData }) {
       </Flex>
       <Input.Wrapper label="Description" w="100%" mb="md">
         <Textarea
-          name="description"
-          value={formData.description}
+          name="summary"
+          value={formData.summary}
           onChange={handleChange}
           autosize
           minRows={5}
@@ -327,7 +423,7 @@ function ProjectsTab({ projectsData }) {
       <Text fw={500} mb="md">
         Your Projects
       </Text>
-      {projectsData.length > 0 ? (
+      {rows.length > 0 ? (
         <Table striped highlightOnHover withTableBorder withColumnBorders>
           <Table.Thead>
             <Table.Tr>
@@ -336,31 +432,48 @@ function ProjectsTab({ projectsData }) {
               <Table.Th>Project Link</Table.Th>
               <Table.Th>Start Date</Table.Th>
               <Table.Th>End Date</Table.Th>
+              <Table.Th style={{ width: 70 }}>Action</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {projectsData.map((project, index) => (
-              <Table.Tr key={index}>
+            {rows.map((project, index) => (
+              <Table.Tr key={project.id ?? index}>
                 <Table.Td style={{ textAlign: "center" }}>
                   {project.project_name}
                 </Table.Td>
                 <Table.Td style={{ textAlign: "center" }}>
-                  {project.status}
+                  {project.project_status}
                 </Table.Td>
                 <Table.Td style={{ textAlign: "center" }}>
-                  <a
-                    href={project.project_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {project.project_link}
-                  </a>
+                  {project.project_link && (
+                    <a
+                      href={project.project_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {project.project_link}
+                    </a>
+                  )}
                 </Table.Td>
                 <Table.Td style={{ textAlign: "center" }}>
-                  {project.start_date}
+                  {project.sdate}
                 </Table.Td>
                 <Table.Td style={{ textAlign: "center" }}>
-                  {project.end_date}
+                  {project.edate}
+                </Table.Td>
+                <Table.Td style={{ textAlign: "center" }}>
+                  <Tooltip label="Remove" withArrow>
+                    <ActionIcon
+                      color="red"
+                      variant="subtle"
+                      disabled={!project.id}
+                      loading={deletingId === project.id}
+                      onClick={() => handleDelete(project)}
+                      aria-label="Remove project"
+                    >
+                      <IconTrash size={18} />
+                    </ActionIcon>
+                  </Tooltip>
                 </Table.Td>
               </Table.Tr>
             ))}
@@ -410,53 +523,36 @@ export default function WorkExperienceComponent({ experience, project }) {
   );
 }
 
+const experienceShape = PropTypes.shape({
+  id: PropTypes.number,
+  company: PropTypes.string,
+  location: PropTypes.string,
+  title: PropTypes.string,
+  status: PropTypes.string,
+  sdate: PropTypes.string,
+  edate: PropTypes.string,
+  description: PropTypes.string,
+});
+
+const projectShape = PropTypes.shape({
+  id: PropTypes.number,
+  project_name: PropTypes.string,
+  project_status: PropTypes.string,
+  project_link: PropTypes.string,
+  sdate: PropTypes.string,
+  edate: PropTypes.string,
+  summary: PropTypes.string,
+});
+
 WorkExperienceComponent.propTypes = {
-  experience: PropTypes.arrayOf(
-    PropTypes.shape({
-      organization: PropTypes.string,
-      location: PropTypes.string,
-      job_title: PropTypes.string,
-      status: PropTypes.string,
-      start_date: PropTypes.string,
-      end_date: PropTypes.string,
-      description: PropTypes.string,
-    }),
-  ).isRequired,
-  project: PropTypes.arrayOf(
-    PropTypes.shape({
-      project_name: PropTypes.string,
-      status: PropTypes.string,
-      project_link: PropTypes.string,
-      start_date: PropTypes.string,
-      end_date: PropTypes.string,
-      description: PropTypes.string,
-    }),
-  ).isRequired,
+  experience: PropTypes.arrayOf(experienceShape),
+  project: PropTypes.arrayOf(projectShape),
 };
 
 InternshipsTab.propTypes = {
-  internshipsData: PropTypes.arrayOf(
-    PropTypes.shape({
-      organization: PropTypes.string,
-      location: PropTypes.string,
-      job_title: PropTypes.string,
-      status: PropTypes.string,
-      start_date: PropTypes.string,
-      end_date: PropTypes.string,
-      description: PropTypes.string,
-    }),
-  ).isRequired,
+  internshipsData: PropTypes.arrayOf(experienceShape),
 };
 
 ProjectsTab.propTypes = {
-  projectsData: PropTypes.arrayOf(
-    PropTypes.shape({
-      project_name: PropTypes.string,
-      status: PropTypes.string,
-      project_link: PropTypes.string,
-      start_date: PropTypes.string,
-      end_date: PropTypes.string,
-      description: PropTypes.string,
-    }),
-  ).isRequired,
+  projectsData: PropTypes.arrayOf(projectShape),
 };
